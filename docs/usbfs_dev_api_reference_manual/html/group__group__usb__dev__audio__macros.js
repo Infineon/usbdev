@@ -1,0 +1,25 @@
+var group__group__usb__dev__audio__macros =
+[
+    [ "CY_USB_DEV_AUDIO_RQST_GET_CUR", "group__group__usb__dev__audio__macros.html#gad27fbd09001566294e4d0247e1943ecb", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_GET_MIN", "group__group__usb__dev__audio__macros.html#ga8027c253d6f52017920679a1fed373eb", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_GET_MAX", "group__group__usb__dev__audio__macros.html#ga43ac3657d2c2e04fcfd61610ffebfcdf", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_GET_RES", "group__group__usb__dev__audio__macros.html#gab54325c3064ad1474fc97e167f12b5bf", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_GET_MEM", "group__group__usb__dev__audio__macros.html#gaeedfcf676374ddf2a4be997f6bfa024f", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_GET_STAT", "group__group__usb__dev__audio__macros.html#ga22a2b84934e9a63edae640a436c22a3b", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_SET_CUR", "group__group__usb__dev__audio__macros.html#ga29f208754239e19e18535e4d2b44d87d", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_SET_MIN", "group__group__usb__dev__audio__macros.html#ga9aa23a3fd0a4059cc0e5f13249a090d9", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_SET_MAX", "group__group__usb__dev__audio__macros.html#gac031ae6a65167f2c18cda490d66e3fe0", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_SET_RES", "group__group__usb__dev__audio__macros.html#gacd0100110788a78373f810e35b4838f8", null ],
+    [ "CY_USB_DEV_AUDIO_RQST_SET_MEM", "group__group__usb__dev__audio__macros.html#ga0a74fbcb47d0f506100faad0033cf4c6", null ],
+    [ "CY_USB_DEV_AUDIO2_RQST_CUR", "group__group__usb__dev__audio__macros.html#gae22801ea6e6adba26c29c6b3efd08814", null ],
+    [ "CY_USB_DEV_AUDIO2_RQST_RANGE", "group__group__usb__dev__audio__macros.html#ga7d66dca27b97941f72a0065e205c1b4b", null ],
+    [ "CY_USB_DEV_AUDIO2_RQST_MEM", "group__group__usb__dev__audio__macros.html#ga65897e1ce33b8a8bc0099cb5facd80e1", null ],
+    [ "CY_USB_DEV_AUDIO_MASTER_CHANNEL", "group__group__usb__dev__audio__macros.html#ga75a141c13c6074fcf2bc75313b33b504", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MIN", "group__group__usb__dev__audio__macros.html#gaac6fd7f1bd27de8590ead0c398fea2da", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MAX", "group__group__usb__dev__audio__macros.html#ga28deab15fdff03b1c7468b69d568bc64", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_SILENCE", "group__group__usb__dev__audio__macros.html#ga27e0c25ae733bb10d70ae5dd6c2f345f", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MIN_MSB", "group__group__usb__dev__audio__macros.html#gafe1e246f4f82ec8259cf0ff07cb37add", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MIN_LSB", "group__group__usb__dev__audio__macros.html#ga7681f7c713666af9fa35156635828f11", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MAX_MSB", "group__group__usb__dev__audio__macros.html#ga022bdd57ebc89458e734e35c508b5c83", null ],
+    [ "CY_USB_DEV_AUDIO_VOLUME_MAX_LSB", "group__group__usb__dev__audio__macros.html#ga719da2b23b0d408c662d56d04893ad09", null ]
+];
