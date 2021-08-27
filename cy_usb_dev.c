@@ -1,12 +1,13 @@
 /***************************************************************************//**
 * \file cy_usb_dev.c
-* \version 2.0
+* \version 2.10
 *
 * Provides API implementation of the USBFS device middleware.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -14,7 +15,7 @@
 
 #include "cy_usb_dev.h"
 
-#if defined(CY_IP_MXUSBFS)
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 
 /*******************************************************************************
@@ -71,7 +72,11 @@
 *******************************************************************************/
 
 static int32_t HandleTimeout(int32_t milliseconds);
+
+#if defined(CY_IP_MXUSBFS)
 static void InitSerialNumberString(cy_stc_usb_dev_context_t *context);
+#endif /* defined(CY_IP_MXUSBFS)  */
+
 static cy_en_usb_dev_status_t ConvertEndpointStateToStatus(cy_en_usb_dev_ep_state_t epState);
 
 static void BusResetCallback(USBFS_Type *base, struct cy_stc_usbfs_dev_drv_context *drvContext);
@@ -85,39 +90,39 @@ static cy_en_usb_dev_status_t HandleOut  (cy_stc_usb_dev_context_t *context);
 
 static void DecodeSetupPacket (uint8_t const *data, cy_stc_usb_dev_setup_packet_t *packet);
 
-static cy_en_usb_dev_status_t HandleStandardRequests (cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t HandleStandardRequests (cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t GetDescriptorRequest   (cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorRequest   (cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t GetInterfaceRequest    (cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetInterfaceRequest    (cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t GetStatusRequest       (cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetStatusRequest       (cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t const *context);
-static cy_en_usb_dev_status_t ClearFeatureRequest    (cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t ClearFeatureRequest    (cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t SetAddressRequest      (cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetAddressRequest      (cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t SetConfigurationRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetConfigurationRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t SetInterfaceRequest    (cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetInterfaceRequest    (cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t SetFeatureRequest      (cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetFeatureRequest      (cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context);
 
 static cy_en_usb_dev_status_t HandleClassRequests(cy_stc_usb_dev_class_ll_item_t    *curItem,
-                                                  cy_stc_usb_dev_control_transfer_t *transfer, 
+                                                  cy_stc_usb_dev_control_transfer_t *transfer,
                                                   cy_stc_usb_dev_context_t          *context);
 static cy_en_usb_dev_status_t HandleClassRequestsCompleted(cy_stc_usb_dev_class_ll_item_t    *curItem,
-                                                           cy_stc_usb_dev_control_transfer_t *transfer, 
+                                                           cy_stc_usb_dev_control_transfer_t *transfer,
                                                            cy_stc_usb_dev_context_t          *context);
 
 static cy_en_usb_dev_status_t GetExtOsStringDescriptors(cy_stc_usb_dev_ms_os_string_t const *msOsString,
                                                         cy_stc_usb_dev_control_transfer_t *transfer);
-static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transfer_t *transfer,
                                                    cy_stc_usb_dev_context_t *context);
-static cy_en_usb_dev_status_t HandleVendorRequestsCompleted(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t HandleVendorRequestsCompleted(cy_stc_usb_dev_control_transfer_t *transfer,
                                                             cy_stc_usb_dev_context_t *context);
 
 static cy_en_usb_dev_status_t CallSetInterfaceCallbacks(uint32_t interface,
@@ -149,9 +154,9 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 * The pointer to the USBFS driver configuration structure.
 *
 * \param drvContext
-* The pointer to the USBFS driver context structure allocated by the user. 
-* The structure is used during the USBFS driver operation for internal 
-* configuration and data retention. The user must not modify anything in 
+* The pointer to the USBFS driver context structure allocated by the user.
+* The structure is used during the USBFS driver operation for internal
+* configuration and data retention. The user must not modify anything in
 * this structure.
 *
 * \param device
@@ -162,15 +167,15 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 *
 * \param context
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the USB Device operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the USB Device operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 * \return
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 * \note
-* The configuration of USB clocks, pins, and interrupts is not handled by this 
+* The configuration of USB clocks, pins, and interrupts is not handled by this
 * function and must be done on the application level.
 *
 *******************************************************************************/
@@ -187,7 +192,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_Init(USBFS_Type *base,
     {
         return CY_USB_DEV_BAD_PARAM;
     }
-    
+
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_DRV_HW_ERROR;
 
     /* Store driver information in device */
@@ -202,27 +207,32 @@ cy_en_usb_dev_status_t Cy_USB_Dev_Init(USBFS_Type *base,
     /* Configure endpoint 0 buffer */
     context->ControlTransfer.buffer  = config->ep0Buffer;
     context->ControlTransfer.bufferSize = config->ep0BufferSize;
-    
+
     /* Store link to descriptors */
     context->devDescriptors = device;
-   
+
     /* Initialize delay function */
     context->handleTimeout = &HandleTimeout;
 
     /* Initialize event callback */
     context->eventsCallback = NULL;
 
+#if defined(CY_IP_MXUSBFS)
+
     /* Initialize serial string descriptor and set pointer */
     InitSerialNumberString(context);
+
+#endif /* defined(CY_IP_MXUSBFS)  */
+
     context->getSerialNumString = NULL;
 
     /* Initialize vendor-specific callbacks */
     context->vndRequestReceived  = NULL;
     context->vndRequestCompleted = NULL;
-    
+
     /* Link driver and device context */
     Cy_USBFS_Dev_Drv_SetDevContext(base, context, drvContext);
-    
+
     /* Configure driver */
     retStatus = (cy_en_usb_dev_status_t) Cy_USBFS_Dev_Drv_Init(base, drvConfig, drvContext);
 
@@ -234,7 +244,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_Init(USBFS_Type *base,
         Cy_USBFS_Dev_Drv_RegisterServiceCallback(base, CY_USB_DEV_EP0_IN,    &Ep0InCallback,    drvContext);
         Cy_USBFS_Dev_Drv_RegisterServiceCallback(base, CY_USB_DEV_EP0_OUT,   &Ep0OutCallback,   drvContext);
     }
-    
+
     return retStatus;
 }
 
@@ -269,7 +279,7 @@ void Cy_USB_Dev_DeInit(cy_stc_usb_dev_context_t *context)
 * Function Name: HandleTimeout
 ****************************************************************************//**
 *
-* Waits for 1 millisecond and returns updated number of milliseconds that remain 
+* Waits for 1 millisecond and returns updated number of milliseconds that remain
 * to wait before timeout expires.
 *
 * \param milliseconds
@@ -291,7 +301,7 @@ static int32_t HandleTimeout(int32_t milliseconds)
 * Function Name: Cy_USB_Dev_Connect
 ****************************************************************************//**
 *
-* Enables pull-up on D+ (hardware supports only full-speed device) line to 
+* Enables pull-up on D+ (hardware supports only full-speed device) line to
 * signal USB Device connection on USB Bus.
 *
 * \param blocking
@@ -299,7 +309,7 @@ static int32_t HandleTimeout(int32_t milliseconds)
 *
 * \param timeout
 * Defines in milliseconds the time for which this function can block.
-* If that time expires, the USB Device is disconnected and the function returns. 
+* If that time expires, the USB Device is disconnected and the function returns.
 * To wait forever, pass \ref CY_USB_DEV_WAIT_FOREVER.
 *
 * \param context
@@ -352,7 +362,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_Connect(bool blocking, int32_t timeout, cy_stc
 * Function Name: Cy_USB_Dev_Disconnect
 ****************************************************************************//**
 *
-* Disables pull-up on D+ (hardware supports only full-speed device) line to 
+* Disables pull-up on D+ (hardware supports only full-speed device) line to
 * signal USB Device disconnection on USB Bus.
 *
 * \param context
@@ -379,8 +389,8 @@ void Cy_USB_Dev_Disconnect(cy_stc_usb_dev_context_t *context)
 * Converts endpoint state to the USB Device status code.
 *
 * \param epState
-* Endpoint state \ref cy_en_usb_dev_ep_state_t. 
-* The state \ref CY_USB_DEV_EP_IDLE converted to \ref CY_USB_DEV_DRV_HW_DISABLED
+* Endpoint state cy_en_usb_dev_ep_state_t.
+* The state CY_USB_DEV_EP_IDLE converted to \ref CY_USB_DEV_DRV_HW_DISABLED
 * to indicate that current endpoint configuration was changed.
 *
 * \return
@@ -397,7 +407,7 @@ static cy_en_usb_dev_status_t ConvertEndpointStateToStatus(cy_en_usb_dev_ep_stat
             retStatus = CY_USB_DEV_SUCCESS;
         break;
 
-        case CY_USB_DEV_EP_PENDING: 
+        case CY_USB_DEV_EP_PENDING:
             retStatus = CY_USB_DEV_DRV_HW_BUSY;
         break;
 
@@ -415,9 +425,9 @@ static cy_en_usb_dev_status_t ConvertEndpointStateToStatus(cy_en_usb_dev_ep_stat
             retStatus = CY_USB_DEV_BAD_PARAM;
         break;
     }
-    
+
     return retStatus;
-}   
+}
 
 
 /*******************************************************************************
@@ -446,11 +456,11 @@ static cy_en_usb_dev_status_t ConvertEndpointStateToStatus(cy_en_usb_dev_ep_stat
 *
 * \note
 * The abort operation is not supported for ISOC endpoints because
-* these endpoints do not have handshake and are always accessible by the 
+* these endpoints do not have handshake and are always accessible by the
 * USB Host. Therefore, abort can cause unexpected behavior.
 *
 *******************************************************************************/
-cy_en_usb_dev_status_t Cy_USB_Dev_AbortEpTransfer(uint32_t endpoint, 
+cy_en_usb_dev_status_t Cy_USB_Dev_AbortEpTransfer(uint32_t endpoint,
                                                   cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus;
@@ -486,24 +496,24 @@ cy_en_usb_dev_status_t Cy_USB_Dev_AbortEpTransfer(uint32_t endpoint,
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 * \note
-* The read is not allowed for OUT endpoints after SET_CONFIGURATION or 
-* SET_INTERFACE request therefore this function must be called before reading data 
+* The read is not allowed for OUT endpoints after SET_CONFIGURATION or
+* SET_INTERFACE request therefore this function must be called before reading data
 * from OUT endpoints.
 *
 *******************************************************************************/
 cy_en_usb_dev_status_t Cy_USB_Dev_StartReadEp(uint32_t endpoint, cy_stc_usb_dev_context_t *context)
-{    
+{
     cy_en_usb_dev_status_t   retStatus;
     cy_en_usb_dev_ep_state_t epState;
 
     epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
-    
+
     /* Check that endpoint is ready for read operation */
     if ((CY_USB_DEV_EP_IDLE == epState) || (CY_USB_DEV_EP_COMPLETED == epState))
     {
         /* Enable endpoint to be written by host */
         Cy_USBFS_Dev_Drv_EnableOutEndpoint(context->drvBase, endpoint, context->drvContext);
-        
+
         retStatus = CY_USB_DEV_SUCCESS;
     }
     else
@@ -520,8 +530,8 @@ cy_en_usb_dev_status_t Cy_USB_Dev_StartReadEp(uint32_t endpoint, cy_stc_usb_dev_
 * Function Name: Cy_USB_Dev_ReadEpBlocking
 ****************************************************************************//**
 *
-* Read data received from USB Host from a certain endpoint. Before calling 
-* this function, \ref Cy_USB_Dev_StartReadEp must be called. 
+* Read data received from USB Host from a certain endpoint. Before calling
+* this function, \ref Cy_USB_Dev_StartReadEp must be called.
 * This function is blocking and returns after successful USB Host transfer,
 * or an error or timeout occurred.
 *
@@ -530,7 +540,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_StartReadEp(uint32_t endpoint, cy_stc_usb_dev_
 *
 * \param buffer
 * The pointer to buffer that stores data that was read. \n
-* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make 
+* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make
 * it USBFS driver configuration independent (See \ref group_usb_dev_ep_buf_alloc
 * for more information).
 *
@@ -543,7 +553,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_StartReadEp(uint32_t endpoint, cy_stc_usb_dev_
 *
 * \param timeout
 * Defines in milliseconds the time for which this function can block.
-* If that time expires the function returns. 
+* If that time expires the function returns.
 * To wait forever pass \ref CY_USB_DEV_WAIT_FOREVER.
 *
 * \param context
@@ -556,8 +566,8 @@ cy_en_usb_dev_status_t Cy_USB_Dev_StartReadEp(uint32_t endpoint, cy_stc_usb_dev_
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buffer, 
-                                                 uint32_t size, uint32_t *actSize, int32_t timeout, 
+cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buffer,
+                                                 uint32_t size, uint32_t *actSize, int32_t timeout,
                                                  cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t   retStatus = CY_USB_DEV_SUCCESS;
@@ -572,7 +582,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
         while (CY_USB_DEV_EP_PENDING == epState)
         {
             (void) context->handleTimeout(timeout);
-            
+
             /* Update endpoint state */
             epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
         }
@@ -587,7 +597,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
             /* Update endpoint state */
             epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
         }
-        
+
         /* Timeout expired */
         if (0 == timeout)
         {
@@ -596,27 +606,27 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
             retStatus = CY_USB_DEV_TIMEOUT;
         }
     }
-    
+
     /* Clear actual number of read bytes */
     *actSize = 0U;
 
     /* Read data from endpoint buffer after completion */
     if (CY_USB_DEV_EP_COMPLETED == epState)
     {
-        retStatus = (cy_en_usb_dev_status_t) 
-                        Cy_USBFS_Dev_Drv_ReadOutEndpoint(context->drvBase, 
+        retStatus = (cy_en_usb_dev_status_t)
+                        Cy_USBFS_Dev_Drv_ReadOutEndpoint(context->drvBase,
                             endpoint, buffer, size, actSize, context->drvContext);
-        
+
         if (CY_USB_DEV_SUCCESS != retStatus)
         {
             retStatus = CY_USB_DEV_DRV_HW_ERROR;
         }
     }
-    
+
     if ((CY_USB_DEV_TIMEOUT != retStatus) && (CY_USB_DEV_DRV_HW_ERROR != retStatus))
     {
         /* Use endpoint state to get status */
-        retStatus = ConvertEndpointStateToStatus(epState); 
+        retStatus = ConvertEndpointStateToStatus(epState);
     }
 
     return retStatus;
@@ -627,7 +637,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
 * Function Name: Cy_USB_Dev_ReadEpNonBlocking
 ****************************************************************************//**
 *
-* Read data received from USB Host from a certain endpoint. Before calling 
+* Read data received from USB Host from a certain endpoint. Before calling
 * this function, \ref Cy_USB_Dev_StartReadEp must be called.
 *
 * \param endpoint
@@ -635,7 +645,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
 *
 * \param buffer
 * The pointer to buffer that stores data that was read. \n
-* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make 
+* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make
 * it USBFS driver configuration independent (See \ref group_usb_dev_ep_buf_alloc
 * for more information).
 *
@@ -656,7 +666,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpBlocking(uint32_t endpoint, uint8_t *buf
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *buffer, 
+cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *buffer,
                                                     uint32_t size, uint32_t *actSize, cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t   retStatus;
@@ -667,10 +677,10 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *
     /* Read data from endpoint buffer after completion */
     if (CY_USB_DEV_EP_COMPLETED == epState)
     {
-        retStatus = (cy_en_usb_dev_status_t) 
-                        Cy_USBFS_Dev_Drv_ReadOutEndpoint(context->drvBase, 
+        retStatus = (cy_en_usb_dev_status_t)
+                        Cy_USBFS_Dev_Drv_ReadOutEndpoint(context->drvBase,
                             endpoint, buffer, size, actSize, context->drvContext);
-                    
+
         if (CY_USB_DEV_SUCCESS != retStatus)
         {
             retStatus = CY_USB_DEV_DRV_HW_ERROR;
@@ -702,7 +712,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *
 *
 * \param buffer
 * The pointer to the buffer containing data bytes to write. \n
-* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make 
+* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make
 * it USBFS driver configuration independent (See \ref group_usb_dev_ep_buf_alloc
 * for more information).
 *
@@ -712,7 +722,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *
 *
 * \param timeout
 * Defines in milliseconds the time for which this function can block.
-* If that time expires, the function returns. 
+* If that time expires, the function returns.
 * To wait forever, pass \ref CY_USB_DEV_WAIT_FOREVER.
 *
 * \param context
@@ -725,33 +735,33 @@ cy_en_usb_dev_status_t Cy_USB_Dev_ReadEpNonBlocking(uint32_t endpoint, uint8_t *
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpBlocking(uint32_t endpoint, uint8_t const *buffer, 
+cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpBlocking(uint32_t endpoint, uint8_t const *buffer,
                                                   uint32_t size, int32_t timeout, cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t   retStatus = CY_USB_DEV_BAD_PARAM;
     cy_en_usb_dev_ep_state_t epState;
-    
+
     epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
 
     /* Check that endpoint is ready for write operation */
     if ((CY_USB_DEV_EP_IDLE == epState) || (CY_USB_DEV_EP_COMPLETED == epState))
     {
-        retStatus = (cy_en_usb_dev_status_t) Cy_USBFS_Dev_Drv_LoadInEndpoint(context->drvBase, 
+        retStatus = (cy_en_usb_dev_status_t) Cy_USBFS_Dev_Drv_LoadInEndpoint(context->drvBase,
                                                 endpoint, buffer, size, context->drvContext);
-        
+
         /* Check endpoint load status */
         if (CY_USB_DEV_SUCCESS == retStatus)
         {
             /* Update endpoint state after load operation */
             epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
-            
+
             if (CY_USB_DEV_WAIT_FOREVER == timeout)
             {
                 /* Wait until transfer is completed */
                 while (CY_USB_DEV_EP_PENDING == epState)
                 {
                     (void) context->handleTimeout(timeout);
-                    
+
                     /* Update endpoint state */
                     epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
                 }
@@ -785,7 +795,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpBlocking(uint32_t endpoint, uint8_t con
     if ((CY_USB_DEV_TIMEOUT != retStatus) && (CY_USB_DEV_DRV_HW_ERROR != retStatus))
     {
         /* Use endpoint state to get status */
-        retStatus = ConvertEndpointStateToStatus(epState); 
+        retStatus = ConvertEndpointStateToStatus(epState);
     }
 
     return retStatus;
@@ -796,14 +806,14 @@ cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpBlocking(uint32_t endpoint, uint8_t con
 * Function Name: Cy_USB_Dev_WriteEpNonBlocking
 ****************************************************************************//**
 *
-* Write data to be transferred to USB Host from a certain endpoint. 
+* Write data to be transferred to USB Host from a certain endpoint.
 *
 * \param endpoint
 * The IN data endpoint number.
 *
 * \param buffer
 * The pointer to the buffer containing data bytes to write. \n
-* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make 
+* Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make
 * it USBFS driver configuration independent (See \ref group_usb_dev_ep_buf_alloc
 * for more information).
 *
@@ -821,24 +831,24 @@ cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpBlocking(uint32_t endpoint, uint8_t con
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpNonBlocking(uint32_t endpoint, uint8_t const *buffer, 
+cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpNonBlocking(uint32_t endpoint, uint8_t const *buffer,
                                                      uint32_t size, cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t   retStatus;
     cy_en_usb_dev_ep_state_t epState;
-    
+
     epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
-    
+
     /* Check that endpoint is ready for operation */
     if ((CY_USB_DEV_EP_IDLE == epState) || (CY_USB_DEV_EP_COMPLETED == epState))
     {
-        retStatus = (cy_en_usb_dev_status_t) 
-                        Cy_USBFS_Dev_Drv_LoadInEndpoint(context->drvBase, 
+        retStatus = (cy_en_usb_dev_status_t)
+                        Cy_USBFS_Dev_Drv_LoadInEndpoint(context->drvBase,
                             endpoint, buffer, size, context->drvContext);
-        
+
         /* Write data into the endpoint buffer */
         if (CY_USB_DEV_SUCCESS != retStatus)
-                
+
         {
              retStatus = CY_USB_DEV_DRV_HW_ERROR;
         }
@@ -861,7 +871,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_WriteEpNonBlocking(uint32_t endpoint, uint8_t 
 * \param base
 * The pointer to the USBFS instance.
 *
-* \param context
+* \param drvContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
 * by the user. The structure is used during the USB Device operation for internal
 * configuration and data retention. The user must not modify anything in this
@@ -948,7 +958,7 @@ static void DecodeSetupPacket(uint8_t const *data, cy_stc_usb_dev_setup_packet_t
 static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-    
+
     cy_stc_usb_dev_control_transfer_t *transfer = &context->ControlTransfer;
 
     /* Get setup packet from hardware */
@@ -964,7 +974,7 @@ static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
     transfer->direction = transfer->setup.bmRequestType.direction;
     transfer->zlp       = false;
     transfer->notify    = false;
-    
+
     /* Handle Setup request depends on type */
     switch (transfer->setup.bmRequestType.type)
     {
@@ -1000,7 +1010,7 @@ static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
     if (CY_USB_DEV_SUCCESS == retStatus)
     {
         retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-        
+
         /* Check transfer setup before continue transfer */
         if (transfer->setup.bmRequestType.direction == transfer->direction)
         {
@@ -1010,20 +1020,20 @@ static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
                 if (CY_USB_DEV_DIR_DEVICE_TO_HOST == transfer->direction)
                 {
                     /* IN data stage is required */
-                    
+
                     /* Transfer must be less than or equal to the size requested by the host */
                     if (transfer->remaining > transfer->setup.wLength)
                     {
                         transfer->remaining = transfer->setup.wLength;
                     }
-                    
+
                     retStatus = CY_USB_DEV_SUCCESS;
                 }
                 else
                 {
                     /* OUT data stage is required */
 
-                    /* Transfer must be equal to the size requested by the Host and 
+                    /* Transfer must be equal to the size requested by the Host and
                     * buffer for data must be large enough
                     */
                     if ((transfer->remaining == transfer->setup.wLength) &&
@@ -1057,7 +1067,7 @@ static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
                         /* Transfer is a multiple of EP0 max packet size */
                         transfer->zlp = (0U == (transfer->remaining % Cy_USBFS_Dev_Drv_GetEp0MaxPacket(context->drvBase)));
                     }
-                    
+
                     /* Handle data stage (IN direction) */
                     (void) HandleIn(context);
                 }
@@ -1065,7 +1075,7 @@ static cy_en_usb_dev_status_t HandleSetup(cy_stc_usb_dev_context_t *context)
                 {
                     /* Set buffer to accept Host data */
                     transfer->ptr = transfer->buffer;
-                    
+
                     /* Start data stage (OUT direction) */
                     (void) Cy_USBFS_Dev_Drv_Ep0Read(context->drvBase, transfer->ptr, (uint32_t) transfer->remaining, context->drvContext);
                 }
@@ -1165,13 +1175,13 @@ static cy_en_usb_dev_status_t HandleIn(cy_stc_usb_dev_context_t *context)
 static cy_en_usb_dev_status_t HandleOut(cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-    
+
     cy_stc_usb_dev_control_transfer_t *transfer = &context->ControlTransfer;
 
     if (CY_USB_DEV_DIR_HOST_TO_DEVICE == transfer->direction)
     {
         /* Control transfer: DATA stage (direction OUT) */
-        
+
         /* Read from endpoint 0 */
         uint16_t packetSize = (uint16_t) Cy_USBFS_Dev_Drv_Ep0ReadResult(context->drvBase, context->drvContext);
 
@@ -1194,7 +1204,7 @@ static cy_en_usb_dev_status_t HandleOut(cy_stc_usb_dev_context_t *context)
 
                 retStatus = CY_USB_DEV_SUCCESS;
             }
-            else 
+            else
             {
                 /* Notify class layer DATA stage completed */
                 if (transfer->notify)
@@ -1207,7 +1217,7 @@ static cy_en_usb_dev_status_t HandleOut(cy_stc_usb_dev_context_t *context)
                     switch(transfer->setup.bmRequestType.type)
                     {
                         case CY_USB_DEV_STANDARD_TYPE:
-                            /* Return CY_USB_DEV_REQUEST_NOT_HANDLED because 
+                            /* Return CY_USB_DEV_REQUEST_NOT_HANDLED because
                             * Standard request handler does not use notification.
                             */
                         break;
@@ -1243,13 +1253,13 @@ static cy_en_usb_dev_status_t HandleOut(cy_stc_usb_dev_context_t *context)
 * Function Name: Ep0SetupCallback
 ****************************************************************************//**
 *
-* Implements callback for setup received event (generated from Endpoint 0 
+* Implements callback for setup received event (generated from Endpoint 0
 * Interrupt). The Endpoint 0 is STALLED if processing was successful.
 *
 * \param base
 * The pointer to the USBFS instance.
 *
-* \param context
+* \param drvContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
 * by the user. The structure is used during the USB Device operation for internal
 * configuration and data retention. The user must not modify anything in this
@@ -1274,13 +1284,13 @@ static void Ep0SetupCallback(USBFS_Type *base, struct cy_stc_usbfs_dev_drv_conte
 * Function Name: Ep0InCallback
 ****************************************************************************//**
 *
-* Implements callback for IN packet received event (generated from Endpoint 0 
+* Implements callback for IN packet received event (generated from Endpoint 0
 * Interrupt). The Endpoint 0 is STALLED if processing was successful.
 *
 * \param base
 * The pointer to the USBFS instance.
 *
-* \param context
+* \param drvContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
 * by the user. The structure is used during the USB Device operation for internal
 * configuration and data retention. The user must not modify anything in this
@@ -1305,13 +1315,13 @@ static void Ep0InCallback(USBFS_Type *base, struct cy_stc_usbfs_dev_drv_context 
 * Function Name: Ep0OutCallback
 ****************************************************************************//**
 *
-* Implements callback for OUT packet received event (generated from Endpoint 0 
+* Implements callback for OUT packet received event (generated from Endpoint 0
 * Interrupt). The Endpoint 0 is STALLED if processing was successful.
 *
 * \param base
 * The pointer to the USBFS instance.
 *
-* \param context
+* \param drvContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
 * by the user. The structure is used during the USB Device operation for internal
 * configuration and data retention. The user must not modify anything in this
@@ -1331,7 +1341,7 @@ static void Ep0OutCallback(USBFS_Type *base, struct cy_stc_usbfs_dev_drv_context
     }
 }
 
-
+#if defined(CY_IP_MXUSBFS)
 /*******************************************************************************
 * Function Name: InitSerialNumberString
 ****************************************************************************//**
@@ -1348,12 +1358,12 @@ static void Ep0OutCallback(USBFS_Type *base, struct cy_stc_usbfs_dev_drv_context
 static void InitSerialNumberString(cy_stc_usb_dev_context_t *context)
 {
     const uint8_t hex[] = "0123456789ABCDEF";
-    uint8_t *strDescr = context->serialNumDescr;    
+    uint8_t *strDescr = context->serialNumDescr;
     uint8_t *id;
     uint32_t i = 0U;
     uint32_t j = 0U;
     uint64_t tmp;
-    
+
     /* Place header: length and type */
     strDescr[STRING_DESCR_LENGTH_POS] = CY_USB_DEV_SN_STRING_DESR_LENGTH;
     strDescr[STRING_DESCR_TYPE_POS]   = CY_USB_DEV_STRING_DESCR;
@@ -1374,7 +1384,7 @@ static void InitSerialNumberString(cy_stc_usb_dev_context_t *context)
         ++j;
     }
 }
-
+#endif /* defined(CY_IP_MXUSBFS)  */
 
 /*******************************************************************************
 * Function Name: GetDescriptorRequest
@@ -1383,7 +1393,7 @@ static void InitSerialNumberString(cy_stc_usb_dev_context_t *context)
 * Handles GET_DESCRIPTOR standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1393,11 +1403,11 @@ static void InitSerialNumberString(cy_stc_usb_dev_context_t *context)
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                    cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -1409,7 +1419,7 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
             /* Return device descriptor */
             transfer->ptr       = (uint8_t *) context->devDescriptors->deviceDescriptor;
             transfer->remaining = CY_USB_DEV_DEVICE_DESCR_LENGTH;
-            
+
             retStatus = CY_USB_DEV_SUCCESS;
         }
         break;
@@ -1422,13 +1432,13 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
             /* Check whether requested configuration descriptor exists */
             if (idx < context->devDescriptors->numConfigurations)
             {
-                uint8 *configDescr = (uint8_t *) context->devDescriptors->configurations[idx]->configDescriptor;
-                
+                uint8_t *configDescr = (uint8_t *) context->devDescriptors->configurations[idx]->configDescriptor;
+
                 /* Return configuration descriptor */
                 transfer->ptr = configDescr;
                 transfer->remaining = GET_UINT16(configDescr[CONFIG_DESCR_LENGTH_LSB_POS],
                                                  configDescr[CONFIG_DESCR_LENGTH_MSB_POS]);
-                
+
                 retStatus = CY_USB_DEV_SUCCESS;
             }
         }
@@ -1445,7 +1455,7 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
                 transfer->ptr       = bosDescr;
                 transfer->remaining = GET_UINT16(bosDescr[BOS_DESCR_LENGTH_LSB_POS],
                                                  bosDescr[BOS_DESCR_LENGTH_MSB_POS]);
-                
+
                 retStatus = CY_USB_DEV_SUCCESS;
             }
         }
@@ -1457,10 +1467,10 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
 
             /* Get string index */
             uint32_t idx = CY_USB_DEV_GET_DESCR_IDX(transfer->setup.wValue);
-            
+
             /* Get pool of strings */
             cy_stc_usb_dev_string_t const *descr = context->devDescriptors->strings;
-            
+
             /* Special case: Microsoft OS Descriptors String descriptor */
             if (idx == STRING_IMSOS_INDEX)
             {
@@ -1468,7 +1478,7 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
                 {
                     /* Get string */
                     strDescr = (uint8_t *) descr->osStringDescriptors->msOsDescriptor;
-                    
+
                     retStatus = CY_USB_DEV_SUCCESS;
                 }
             }
@@ -1548,7 +1558,7 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
 * Handles SET_CONFIGURATION standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1558,16 +1568,16 @@ static cy_en_usb_dev_status_t GetDescriptorRequest(cy_stc_usb_dev_control_transf
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                       cy_stc_usb_dev_context_t *context)
 {
     /* Send the device configuration */
     transfer->ptr       = (uint8_t *) &context->configuration;
-    transfer->remaining = sizeof(context->configuration);
+    transfer->remaining = (uint16_t)sizeof(context->configuration);
 
     return CY_USB_DEV_SUCCESS;
 }
@@ -1580,7 +1590,7 @@ static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_tra
 * Handles GET_INTERFACE standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1590,15 +1600,15 @@ static cy_en_usb_dev_status_t GetConfigurationRequest(cy_stc_usb_dev_control_tra
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetInterfaceRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetInterfaceRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                   cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-    
+
     uint32_t interface = transfer->setup.wIndex;
 
     if (CY_USB_DEV_CONFIGURED != context->state)
@@ -1611,8 +1621,8 @@ static cy_en_usb_dev_status_t GetInterfaceRequest(cy_stc_usb_dev_control_transfe
     {
         /* Return current alternate setting for an interface */
         transfer->ptr       = (uint8_t *) &context->alternate[interface];
-        transfer->remaining = sizeof(context->alternate[interface]);
-        
+        transfer->remaining = (uint16_t)sizeof(context->alternate[interface]);
+
         retStatus = CY_USB_DEV_SUCCESS;
     }
 
@@ -1627,7 +1637,7 @@ static cy_en_usb_dev_status_t GetInterfaceRequest(cy_stc_usb_dev_control_transfe
 * Handles GET_STATUS standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1637,11 +1647,11 @@ static cy_en_usb_dev_status_t GetInterfaceRequest(cy_stc_usb_dev_control_transfe
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                cy_stc_usb_dev_context_t const *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -1681,7 +1691,7 @@ static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t
             uint32_t endpoint = CY_USB_DEV_EPADDR2EP(transfer->setup.wIndex);
 
             cy_en_usb_dev_ep_state_t epState = Cy_USBFS_Dev_Drv_GetEndpointState(context->drvBase, endpoint, context->drvContext);
-            
+
             /* Check that valid endpoint is requested */
             if ((CY_USB_DEV_EP_INVALID != epState) && (CY_USB_DEV_EP_DISABLED != epState))
             {
@@ -1693,18 +1703,21 @@ static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t
         break;
 
         default:
-        break;
+        {
+            /* Do nothing. */
+            break;
+        }
     }
 
     /* Put response into the buffer */
     if (CY_USB_DEV_SUCCESS == retStatus)
     {
         /* Send the status to host */
-        transfer->buffer[0U] = CY_LO8(response);  
+        transfer->buffer[0U] = CY_LO8(response);
         transfer->buffer[1U] = CY_HI8(response);
-        
+
         transfer->ptr       = transfer->buffer;
-        transfer->remaining = sizeof(response);
+        transfer->remaining = (uint16_t)sizeof(response);
     }
 
     return retStatus;
@@ -1718,7 +1731,7 @@ static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t
 * Handles CLEAR_FEATURE standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1728,11 +1741,11 @@ static cy_en_usb_dev_status_t GetStatusRequest(cy_stc_usb_dev_control_transfer_t
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                   cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -1755,7 +1768,7 @@ static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfe
             if (transfer->setup.wValue == CY_USB_DEV_DEVICE_REMOTE_WAKEUP)
             {
                 context->status &= (uint8_t) ~CY_USB_DEV_STATUS_REMOTE_WAKEUP_MASK;
-                
+
                 retStatus = CY_USB_DEV_SUCCESS;
             }
         }
@@ -1773,10 +1786,10 @@ static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfe
                 uint32_t endpoint = CY_USB_DEV_EPADDR2EP(transfer->setup.wIndex);
 
                 /* Only enabled and data endpoints can be STALLED */
-                retStatus = (cy_en_usb_dev_status_t) 
-                            Cy_USBFS_Dev_Drv_UnStallEndpoint(context->drvBase, 
+                retStatus = (cy_en_usb_dev_status_t)
+                            Cy_USBFS_Dev_Drv_UnStallEndpoint(context->drvBase,
                                 endpoint, context->drvContext);
-                
+
                 if (CY_USB_DEV_SUCCESS != retStatus)
                 {
                     retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -1801,7 +1814,7 @@ static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfe
 * Handles SET_ADDRESS standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1811,13 +1824,13 @@ static cy_en_usb_dev_status_t ClearFeatureRequest(cy_stc_usb_dev_control_transfe
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetAddressRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetAddressRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                 cy_stc_usb_dev_context_t *context)
-{  
+{
     uint8_t devAddress = CY_LO8(transfer->setup.wValue);
 
     /* Request to change address after status status */
@@ -1847,12 +1860,13 @@ static cy_en_usb_dev_status_t SetAddressRequest(cy_stc_usb_dev_control_transfer_
 *
 * \return
 * Status of executed operation \ref cy_en_usb_dev_status_t.
+* CY_USB_DEV_SUCCESS is returned if no data endpoints are to be configured.
 *
 *******************************************************************************/
 static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb_dev_context_t *context)
 {
-    cy_en_usb_dev_status_t retStatus = CY_USB_DEV_DRV_HW_ERROR;
-    
+    cy_en_usb_dev_status_t retStatus = CY_USB_DEV_SUCCESS;
+
     uint32_t intf, alt, ep;
 
     uint32_t numIntr = context->devDescriptors->configurations[config]->numInterfaces;
@@ -1872,7 +1886,8 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
             {
                 bool configured = false;
 
-                cy_stc_usb_dev_ep_config_t epConfig;
+                cy_stc_usb_dev_ep_config_t epConfig = {0};
+
                 epConfig.enableEndpoint = false;
                 epConfig.allocBuffer    = true;
 
@@ -1882,8 +1897,8 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
                     /* Go thorough all endpoints that belong to alternate */
                     for (ep = 0U; ep < descr[intf]->alternates[alt]->numEndpoints; ++ep)
                     {
-                        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *) descr[intf]->alternates[alt]->endpoints[ep]->endpointDescriptor;
-                        
+                        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *) ((const void *)(descr[intf]->alternates[alt]->endpoints[ep]->endpointDescriptor));
+
                         /* Find endpoint that needs to be configured */
                         if (CY_USB_DEV_EPADDR2EP(epDescr->bEndpointAddress) == endpoint)
                         {
@@ -1894,13 +1909,13 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
                                 {
                                     epConfig.enableEndpoint = true;
                                 }
-                            
+
                                 /* Initialize endpoint configuration structure */
                                 epConfig.endpointAddr   = epDescr->bEndpointAddress;
                                 epConfig.attributes     = epDescr->bmAttributes;
                                 epConfig.maxPacketSize  = GET_CFG_WORD(&epDescr->wMaxPacketSize);
                                 epConfig.bufferSize     = GET_CFG_WORD(&epDescr->wMaxPacketSize);
-                                
+
                                 /* Set configuration of the 1st endpoint instance */
                                 configured = true;
                             }
@@ -1912,7 +1927,7 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
                                     epConfig.bufferSize = GET_CFG_WORD(&epDescr->wMaxPacketSize);
                                 }
                             }
-                            
+
                             break;
                         }
                     }
@@ -1920,7 +1935,7 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
 
                 /* Add endpoint */
                 retStatus = (cy_en_usb_dev_status_t)
-                            Cy_USBFS_Dev_Drv_AddEndpoint(context->drvBase, 
+                            Cy_USBFS_Dev_Drv_AddEndpoint(context->drvBase,
                                 &epConfig, context->drvContext);
 
                 /* Check operation result */
@@ -1947,7 +1962,7 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
 * Handles SET_CONFIGURATION standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -1957,11 +1972,11 @@ static cy_en_usb_dev_status_t ConfigureDataEndpoints(uint32_t config, cy_stc_usb
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetConfigurationRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetConfigurationRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                       cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2057,7 +2072,7 @@ static cy_en_usb_dev_status_t SetConfigurationRequest(cy_stc_usb_dev_control_tra
             {
                 /* Set configuration failed, remain in current state */
                 Cy_USBFS_Dev_Drv_UnConfigureDevice(context->drvBase, context->drvContext);
-                
+
                 retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
             }
         }
@@ -2095,7 +2110,7 @@ static cy_en_usb_dev_status_t InterfaceRemoveDataEndpoints(uint32_t numEndpoints
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
     uint32_t endpoint;
-    
+
     if (0U == numEndpoints)
     {
         /* Interface with zero endpoints return success */
@@ -2106,18 +2121,18 @@ static cy_en_usb_dev_status_t InterfaceRemoveDataEndpoints(uint32_t numEndpoints
     for (endpoint = 0UL; endpoint < numEndpoints; ++endpoint)
     {
         /* Get endpoint parsed endpoint descriptor */
-        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *) epsPool[endpoint]->endpointDescriptor;
+        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *)((const void *) (epsPool[endpoint]->endpointDescriptor));
 
         /* Remove endpoint */
         retStatus = (cy_en_usb_dev_status_t)
-                    Cy_USBFS_Dev_Drv_RemoveEndpoint(context->drvBase, (uint32_t) epDescr->bEndpointAddress, 
+                    Cy_USBFS_Dev_Drv_RemoveEndpoint(context->drvBase, (uint32_t) epDescr->bEndpointAddress,
                                                     context->drvContext);
 
         if (CY_USB_DEV_SUCCESS != retStatus)
         {
             /* Remove operation failed */
             retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-            break;        
+            break;
         }
     }
 
@@ -2153,7 +2168,7 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
     uint32_t endpoint;
-    
+
     if (0U == numEndpoints)
     {
         /* Interface with zero endpoints return success */
@@ -2163,7 +2178,7 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
     /* Add endpoints that are available the pool */
     for (endpoint = 0UL; endpoint < numEndpoints; ++endpoint)
     {
-        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *) epsPool[endpoint]->endpointDescriptor;
+        cy_stc_usbdev_endpoint_descr_t const *epDescr = (cy_stc_usbdev_endpoint_descr_t const *)((const void *) (epsPool[endpoint]->endpointDescriptor));
         cy_stc_usb_dev_ep_config_t epConfig;
 
         /* Setup configuration structure */
@@ -2175,14 +2190,14 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 
         /* Add endpoint */
         retStatus = (cy_en_usb_dev_status_t)
-                    Cy_USBFS_Dev_Drv_AddEndpoint(context->drvBase, &epConfig, 
+                    Cy_USBFS_Dev_Drv_AddEndpoint(context->drvBase, &epConfig,
                         context->drvContext);
 
         if (CY_USB_DEV_SUCCESS != retStatus)
         {
             /* Add operation failed */
             retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-            break;                    
+            break;
         }
     }
 
@@ -2196,6 +2211,15 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 *
 * Calls Class callbacks for SET_INTERFACE standard request.
 *
+* \param interface
+* The interface number.
+*
+* \param alternate
+* The alternate setting for the interface.
+*
+* \param curItem
+* The pointer to class linked list element.
+*
 * \param context
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
 * by the user. The structure is used during the USB Device operation for internal
@@ -2203,24 +2227,24 @@ static cy_en_usb_dev_status_t InterfaceAddDataEndpoints(uint32_t numEndpoints,
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
-*******************************************************************************/       
+*******************************************************************************/
 static cy_en_usb_dev_status_t CallSetInterfaceCallbacks(uint32_t interface,
                                                         uint32_t alternate,
                                   cy_stc_usb_dev_class_ll_item_t *curItem,
                                         cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_SUCCESS;
-    
+
     /* Call registered Set Interface callbacks for all class instances */
     while (NULL != curItem)
     {
         /* Execute callback */
         if (NULL != curItem->classObj->setInterface)
         {
-            retStatus = curItem->classObj->setInterface(interface, alternate, 
+            retStatus = curItem->classObj->setInterface(interface, alternate,
                                                         curItem->classData, context);
 
             if (CY_USB_DEV_SUCCESS != retStatus)
@@ -2232,7 +2256,7 @@ static cy_en_usb_dev_status_t CallSetInterfaceCallbacks(uint32_t interface,
         /* Move to next element */
         curItem = curItem->next;
     }
-    
+
     return retStatus;
 }
 
@@ -2244,7 +2268,7 @@ static cy_en_usb_dev_status_t CallSetInterfaceCallbacks(uint32_t interface,
 * Handles SET_INTERFACE standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2254,11 +2278,11 @@ static cy_en_usb_dev_status_t CallSetInterfaceCallbacks(uint32_t interface,
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetInterfaceRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetInterfaceRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                   cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2302,7 +2326,7 @@ static cy_en_usb_dev_status_t SetInterfaceRequest(cy_stc_usb_dev_control_transfe
                 }
 
                 if (CY_USB_DEV_SUCCESS == retStatus)
-                {                
+                {
                     /* Notify Bus Reset event for device instance */
                     if (NULL != context->eventsCallback)
                     {
@@ -2344,7 +2368,7 @@ static cy_en_usb_dev_status_t SetInterfaceRequest(cy_stc_usb_dev_control_transfe
 * Handles SET_FEATURE standard request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2354,11 +2378,11 @@ static cy_en_usb_dev_status_t SetInterfaceRequest(cy_stc_usb_dev_control_transfe
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                 cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2398,10 +2422,10 @@ static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_
                 uint32_t endpoint = CY_USB_DEV_EPADDR2EP(transfer->setup.wIndex);
 
                 /* Only enabled and data endpoints can be STALLED */
-                retStatus = (cy_en_usb_dev_status_t) 
-                            Cy_USBFS_Dev_Drv_StallEndpoint(context->drvBase, 
+                retStatus = (cy_en_usb_dev_status_t)
+                            Cy_USBFS_Dev_Drv_StallEndpoint(context->drvBase,
                                 endpoint, context->drvContext);
-                            
+
                 if (CY_USB_DEV_SUCCESS != retStatus)
                 {
                     retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2412,7 +2436,7 @@ static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_
 
         default:
             /* Unknown recipient */
-        break;
+            break;
     }
 
     return retStatus;
@@ -2426,7 +2450,7 @@ static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_
 * Handles supported standard requests.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2436,11 +2460,11 @@ static cy_en_usb_dev_status_t SetFeatureRequest(cy_stc_usb_dev_control_transfer_
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_transfer_t *transfer,
                                                      cy_stc_usb_dev_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2467,6 +2491,7 @@ static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_tran
             break;
 
             default:
+            /* Do nothing. */
             break;
         }
     }
@@ -2474,7 +2499,7 @@ static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_tran
     else
     {
         switch (transfer->setup.bRequest)
-        {                
+        {
             case CY_USB_DEV_RQST_SET_ADDRESS:
                 retStatus = SetAddressRequest(transfer, context);
             break;
@@ -2494,12 +2519,13 @@ static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_tran
             case CY_USB_DEV_RQST_CLEAR_FEATURE:
                 retStatus = ClearFeatureRequest(transfer, context);
             break;
-                
+
             case CY_USB_DEV_RQST_SET_FEATURE:
                 retStatus = SetFeatureRequest(transfer, context);
             break;
 
             default:
+            /* Do nothing. */
             break;
         }
     }
@@ -2518,7 +2544,7 @@ static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_tran
 * The pointer to class linked list element.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2528,12 +2554,12 @@ static cy_en_usb_dev_status_t HandleStandardRequests(cy_stc_usb_dev_control_tran
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
 static cy_en_usb_dev_status_t HandleClassRequests(cy_stc_usb_dev_class_ll_item_t    *curItem,
-                                                  cy_stc_usb_dev_control_transfer_t *transfer, 
+                                                  cy_stc_usb_dev_control_transfer_t *transfer,
                                                   cy_stc_usb_dev_context_t          *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2545,7 +2571,7 @@ static cy_en_usb_dev_status_t HandleClassRequests(cy_stc_usb_dev_class_ll_item_t
         if (NULL != curItem->classObj->requestReceived)
         {
             retStatus = curItem->classObj->requestReceived(transfer, curItem->classData, context);
-            
+
             if (CY_USB_DEV_SUCCESS == retStatus)
             {
                 /* Request is handled, exit loop */
@@ -2565,14 +2591,14 @@ static cy_en_usb_dev_status_t HandleClassRequests(cy_stc_usb_dev_class_ll_item_t
 * Function Name: HandleClassRequestsComplete
 ****************************************************************************//**
 *
-* Handles supported class requests completion stage (data was 
+* Handles supported class requests completion stage (data was
 * received from the USB Host).
 *
 * \param curItem
 * The pointer to class linked list element.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2582,12 +2608,12 @@ static cy_en_usb_dev_status_t HandleClassRequests(cy_stc_usb_dev_class_ll_item_t
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
 static cy_en_usb_dev_status_t HandleClassRequestsCompleted(cy_stc_usb_dev_class_ll_item_t    *curItem,
-                                                           cy_stc_usb_dev_control_transfer_t *transfer, 
+                                                           cy_stc_usb_dev_control_transfer_t *transfer,
                                                            cy_stc_usb_dev_context_t          *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -2625,11 +2651,11 @@ static cy_en_usb_dev_status_t HandleClassRequestsCompleted(cy_stc_usb_dev_class_
 * The pointer to the MS OS String structure \ref cy_stc_usb_dev_ms_os_string_t.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
@@ -2649,7 +2675,7 @@ static cy_en_usb_dev_status_t GetExtOsStringDescriptors(cy_stc_usb_dev_ms_os_str
                 case CY_USB_DEV_MS_OS_STRING_EXT_PROPERTEIS:
                 {
                     /* Get Extended Compat ID / Properties OS Descriptor (ignores wValue) */
-                    uint8_t *strDescr = (uint8_t *) ((CY_USB_DEV_MS_OS_STRING_EXT_COMPAT_ID == transfer->setup.wIndex) ? 
+                    uint8_t *strDescr = (uint8_t *) ((CY_USB_DEV_MS_OS_STRING_EXT_COMPAT_ID == transfer->setup.wIndex) ?
                                                   msOsString->extCompatIdDescriptor : msOsString->extPropertiesDescriptor);
 
                     if (NULL != strDescr)
@@ -2664,6 +2690,7 @@ static cy_en_usb_dev_status_t GetExtOsStringDescriptors(cy_stc_usb_dev_ms_os_str
                 break;
 
                 default:
+                /* Do nothing. */
                     break;
             }
         }
@@ -2680,7 +2707,7 @@ static cy_en_usb_dev_status_t GetExtOsStringDescriptors(cy_stc_usb_dev_ms_os_str
 * Handles supported vendor-specific requests.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2690,7 +2717,7 @@ static cy_en_usb_dev_status_t GetExtOsStringDescriptors(cy_stc_usb_dev_ms_os_str
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
@@ -2701,7 +2728,7 @@ static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transf
 
     /* Get pointer to MS OS String descriptor structure */
     const cy_stc_usb_dev_ms_os_string_t *msOsString = context->devDescriptors->strings->osStringDescriptors;
-    
+
     if (NULL != msOsString)
     {
         retStatus = GetExtOsStringDescriptors(msOsString, transfer);
@@ -2710,7 +2737,7 @@ static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transf
     if ((CY_USB_DEV_SUCCESS != retStatus) && (NULL != context->vndRequestReceived))
     {
         /* There is no classContext for vendor-specific callbacks */
-        context->vndRequestReceived(transfer, NULL, context);
+        retStatus = context->vndRequestReceived(transfer, NULL, context);
     }
 
     return retStatus;
@@ -2721,11 +2748,11 @@ static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transf
 * Function Name: HandleVendorRequestsComplete
 ****************************************************************************//**
 *
-* Handles supported vendor-specific requests completion stage (data was 
+* Handles supported vendor-specific requests completion stage (data was
 * received from the USB Host).
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
@@ -2735,7 +2762,7 @@ static cy_en_usb_dev_status_t HandleVendorRequests(cy_stc_usb_dev_control_transf
 * structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
@@ -2747,18 +2774,18 @@ static cy_en_usb_dev_status_t HandleVendorRequestsCompleted(cy_stc_usb_dev_contr
     if (NULL != context->vndRequestCompleted)
     {
         /* There is no classContext for vendor-specific callbacks */
-        context->vndRequestCompleted(transfer, NULL, context);
+        retStatus = context->vndRequestCompleted(transfer, NULL, context);
     }
 
     return retStatus;
 }
- 
+
 
 /*******************************************************************************
 * Function Name: Cy_USB_Dev_RegisterClass
 ****************************************************************************//**
 *
-* Registers device class that will be supported by USB Device. 
+* Registers device class that will be supported by USB Device.
 * The USB Device provides a hooks to implement required class support.
 *
 * \param classItem
@@ -2768,7 +2795,7 @@ static cy_en_usb_dev_status_t HandleVendorRequestsCompleted(cy_stc_usb_dev_contr
 * The pointer to the class structure.
 *
 * \param classContext
-* The pointer to the context class structure allocated by the user. 
+* The pointer to the context class structure allocated by the user.
 * The structure is used during the custom class operation for internal
 * configuration and data retention.
 *
@@ -2820,7 +2847,7 @@ cy_en_usb_dev_status_t Cy_USB_Dev_RegisterClass(cy_stc_usb_dev_class_ll_item_t *
     return CY_USB_DEV_SUCCESS;
 }
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 
 /* [] END OF FILE */

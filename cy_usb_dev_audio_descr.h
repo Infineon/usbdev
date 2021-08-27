@@ -1,12 +1,13 @@
 /***************************************************************************//**
 * \file cy_usb_dev_audio_descr.h
-* \version 2.0
+* \version 2.10
 *
 * Provides Audio class-specific descriptor defines.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -14,8 +15,8 @@
 
 #if !defined(CY_USB_DEV_AUDIO_DESCR_H)
 #define CY_USB_DEV_AUDIO_DESCR_H
-    
-#if defined(CY_IP_MXUSBFS)
+
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 #if defined(__cplusplus)
 extern "C" {
@@ -23,11 +24,11 @@ extern "C" {
 
 
 /*******************************************************************************
-*                             USB AUDIO 
+*                             USB AUDIO
 *******************************************************************************/
 
 /** \cond INTERNAL */
-/** 
+/**
 * Audio Interface Class, Subclass and Protocol Codes
 */
 #define CY_USB_DEV_AUDIO_CLASS                      (0x01U)
@@ -128,14 +129,14 @@ extern "C" {
 #define CY_USB_DEV_AUDIO_AS_GEN_IF_LENGTH           (0x07U)
 #define CY_USB_DEV_AUDIO_AS_FORMAT_I_LENGTH         (0x0BU)
 
-/** 
-* Endpoint Control Selectors (AUDIO Table A-19) 
+/**
+* Endpoint Control Selectors (AUDIO Table A-19)
 */
 #define CY_USB_DEV_AUDIO_CS_SAMPLING_FREQ_CTRL   (0x01U)  /**< Audio v1.0: sample frequency control selector */
 #define CY_USB_DEV_AUDIO_CS_PITCH_CTRL           (0x02U)  /**< Audio v1.0: pitch control selector */
 
-/** 
-* Feature Unit Control Selectors (AUDIO Table A-11) 
+/**
+* Feature Unit Control Selectors (AUDIO Table A-11)
 */
 #define CY_USB_DEV_AUDIO_CS_MUTE_CONTROL               (0x01U)    /**< Audio v1.0: mute control selector */
 #define CY_USB_DEV_AUDIO_CS_VOLUME_CONTROL             (0x02U)    /**< Audio v1.0: volume control selector */
@@ -153,14 +154,14 @@ extern "C" {
 *                          USB AUDIO version 1.0
 *******************************************************************************/
 
-/** 
+/**
 * Audio Interface Protocol Codes
 */
 #define CY_USB_DEV_AUDIO2_INTERFACE_PROTOCOL_UNDEFINED  (0x00U)
 #define CY_USB_DEV_AUDIO2_IP_VERSION_02_00              (0x20U)
 
 /**
-* A.7 Audio Function Category Codes 
+* A.7 Audio Function Category Codes
 */
 #define CY_USB_DEV_AUDIO2_FUNCTION_SUBCLASS_UNDEFINED   (0x00U)
 #define CY_USB_DEV_AUDIO2_FUNCTION_DESKTOP_SPEAKER      (0x01U)
@@ -177,8 +178,8 @@ extern "C" {
 #define CY_USB_DEV_AUDIO2_FUNCTION_CONTROL_PANEL        (0x0CU)
 #define CY_USB_DEV_AUDIO2_FUNCTION_OTHER                (0xFFU)
 
-/** 
-* A.9 Audio Class-Specific AC Interface Descriptor Subtypes 
+/**
+* A.9 Audio Class-Specific AC Interface Descriptor Subtypes
 */
 #define CY_USB_DEV_AUDIO2_AC_DESCRIPTOR_UNDEFINED       (0x00U)
 #define CY_USB_DEV_AUDIO2_HEADER                        (0x01U)
@@ -195,8 +196,8 @@ extern "C" {
 #define CY_USB_DEV_AUDIO2_CLOCK_MULTIPLIER              (0x0CU)
 #define CY_USB_DEV_AUDIO2_SAMPLE_RATE_CONVERTER         (0x0DU)
 
-/** 
-* Audio Class-Specific AS Interface Descriptor Subtypes 
+/**
+* Audio Class-Specific AS Interface Descriptor Subtypes
 */
 #define CY_USB_DEV_AUDIO2_AS_DESCRIPTOR_UNDEFINED       (0x00U)
 #define CY_USB_DEV_AUDIO2_AS_GENERAL                    (0x01U)
@@ -210,28 +211,28 @@ extern "C" {
 #define CY_USB_DEV_AUDIO2_DESCRIPTOR_UNDEFINED          (0x00U)
 #define CY_USB_DEV_AUDIO2_EP_GENERAL                    (0x01U)
 
-/** 
-* Clock Source Control Selectors 
+/**
+* Clock Source Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_CS_UNDEFINED                  (0x00U)
 #define CY_USB_DEV_AUDIO2_CS_CONTROL_SAM_FREQ           (0x01U)
 #define CY_USB_DEV_AUDIO2_CS_CONTROL_CLOCK_VALID        (0x02U)
 
-/** 
-* Clock Selector Control Selectors 
+/**
+* Clock Selector Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_CX_UNDEFINED                  (0x00U)
 #define CY_USB_DEV_AUDIO2_CX_CLOCK_SELECTOR             (0x01U)
 
 /**
-* Clock Multiplier Control Selectors 
+* Clock Multiplier Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_CM_UNDEFINED                  (0x00U)
 #define CY_USB_DEV_AUDIO2_CM_NUMERATOR                  (0x01U)
 #define CY_USB_DEV_AUDIO2_CM_DENOMINTATOR               (0x02U)
 
 /**
-* Terminal Control Selectors 
+* Terminal Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_TE_UNDEFINED                  (0x00U)
 #define CY_USB_DEV_AUDIO2_TE_COPY_PROTECT               (0x01U)
@@ -243,7 +244,7 @@ extern "C" {
 #define CY_USB_DEV_AUDIO2_TE_LATENCY                    (0x07U)
 
 /**
-* AudioStreaming Interface Control Selectors 
+* AudioStreaming Interface Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_AS_UNDEFINED                  (0x00U)
 #define CY_USB_DEV_AUDIO2_AS_ACT_ALT_SETTING            (0x01U)
@@ -251,20 +252,20 @@ extern "C" {
 #define CY_USB_DEV_AUDIO2_AS_AUDIO_DATA_FORMAT          (0x03U)
 
 /**
-* Endpoint Control Selectors 
+* Endpoint Control Selectors
 */
 #define CY_USB_DEV_AUDIO2_EP_CS_UNDEFINED               (0x00U)
 #define CY_USB_DEV_AUDIO2_EP_CS_PITCH                   (0x01U)
 #define CY_USB_DEV_AUDIO2_EP_CS_DATA_OVERRUN            (0x02U)
 #define CY_USB_DEV_AUDIO2_EP_CS_DATA_UNDERRUN           (0x03U)
-    
+
 /** \endcond */
 
 #if defined(__cplusplus)
 }
 #endif
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 #endif /* (CY_USB_DEV_AUDIO_DESCR_H) */
 

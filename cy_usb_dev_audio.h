@@ -1,12 +1,13 @@
 /***************************************************************************//**
 * \file cy_usb_dev_audio.h
-* \version 2.0
+* \version 2.10
 *
 * Provides Audio class-specific API declarations.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -27,7 +28,7 @@
 
 #include "cy_usb_dev.h"
 
-#if defined(CY_IP_MXUSBFS)
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 #if defined(__cplusplus)
 extern "C" {
@@ -48,20 +49,20 @@ extern "C" {
 * \{
 */
 
-/** Audio class context structure. 
+/** Audio class context structure.
 * All fields for the Audio context structure are internal. Firmware never reads or
 * writes these values. Firmware allocates the structure and provides the
-* address of the structure to the middleware in Audio function calls. Firmware 
+* address of the structure to the middleware in Audio function calls. Firmware
 * must ensure that the defined instance of this structure remains in scope while
 * the middleware is in use.
 */
 typedef struct
 {
     /** \cond INTERNAL*/
-     
+
     /** Pointer to device context */
     cy_stc_usb_dev_context_t *devContext;
-    
+
     /** Audio class functions pointers */
     cy_stc_usb_dev_class_t classObj;
 
@@ -84,11 +85,11 @@ typedef struct
 * \{
 */
 cy_en_usb_dev_status_t Cy_USB_Dev_Audio_Init(void const *config,
-                                             cy_stc_usb_dev_audio_context_t      *context, 
+                                             cy_stc_usb_dev_audio_context_t      *context,
                                              cy_stc_usb_dev_context_t            *devContext);
 
-__STATIC_INLINE void Cy_USB_Dev_Audio_RegisterUserCallback(cy_cb_usb_dev_request_received_t requestReceivedHandle, 
-                                                           cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle, 
+__STATIC_INLINE void Cy_USB_Dev_Audio_RegisterUserCallback(cy_cb_usb_dev_request_received_t requestReceivedHandle,
+                                                           cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle,
                                                            cy_stc_usb_dev_audio_context_t   *context);
 
 __STATIC_INLINE cy_stc_usb_dev_class_t * Cy_USB_Dev_Audio_GetClass(cy_stc_usb_dev_audio_context_t *context);
@@ -152,28 +153,28 @@ __STATIC_INLINE cy_stc_usb_dev_class_t * Cy_USB_Dev_Audio_GetClass(cy_stc_usb_de
 * Registers the user callbacks to handle Audio class requests.
 *
 * \param requestReceivedHandle
-* The pointer to a callback function. 
-* This function is called when setup packet was received from the USB Host but was 
-* not recognized. Therefore this might require Audio class processing. 
+* The pointer to a callback function.
+* This function is called when setup packet was received from the USB Host but was
+* not recognized. Therefore this might require Audio class processing.
 * To remove the callback function, pass a NULL as the function pointer.
 *
 * \param requestCompletedHandle
-* The pointer to a callback function. 
-* This function is called when the USB Device received data from the USB Host 
-* as part of current request processing. The requestReceivedHandle function 
-* must enable notification to trigger this event. This makes sense only when class 
-* request processing requires a data stage. 
+* The pointer to a callback function.
+* This function is called when the USB Device received data from the USB Host
+* as part of current request processing. The requestReceivedHandle function
+* must enable notification to trigger this event. This makes sense only when class
+* request processing requires a data stage.
 * To remove the callback function, pass a NULL as the function pointer.
 *
 * \param context
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the Audio Class operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the Audio Class operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 *******************************************************************************/
-__STATIC_INLINE void Cy_USB_Dev_Audio_RegisterUserCallback(cy_cb_usb_dev_request_received_t requestReceivedHandle, 
-                                                           cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle, 
+__STATIC_INLINE void Cy_USB_Dev_Audio_RegisterUserCallback(cy_cb_usb_dev_request_received_t requestReceivedHandle,
+                                                           cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle,
                                                            cy_stc_usb_dev_audio_context_t   *context)
 {
     Cy_USB_Dev_RegisterClassRequestRcvdCallback(requestReceivedHandle,   Cy_USB_Dev_Audio_GetClass(context));
@@ -189,8 +190,8 @@ __STATIC_INLINE void Cy_USB_Dev_Audio_RegisterUserCallback(cy_cb_usb_dev_request
 *
 * \param context
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the Audio Class operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the Audio Class operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 * \return
@@ -208,7 +209,7 @@ __STATIC_INLINE cy_stc_usb_dev_class_t * Cy_USB_Dev_Audio_GetClass(cy_stc_usb_de
 }
 #endif
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 #endif /* (CY_USB_DEV_AUDIO_H) */
 

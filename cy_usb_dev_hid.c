@@ -1,12 +1,13 @@
 /***************************************************************************//**
 * \file cy_usb_dev_hid.c
-* \version 2.0
+* \version 2.10
 *
 * Provides HID class-specific API implementation.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -15,7 +16,7 @@
 
 #include "cy_usb_dev_hid.h"
 
-#if defined(CY_IP_MXUSBFS)
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 
 /*******************************************************************************
@@ -41,49 +42,49 @@
 
 static void HandleBusReset(void *classContext, cy_stc_usb_dev_context_t *devContext);
 
-static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
-                                            void *classContext, 
+static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *transfer,
+                                            void *classContext,
                                             cy_stc_usb_dev_context_t *devContext);
 
-static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer, 
-                                                    void *classContext, 
+static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer,
+                                                    void *classContext,
                                                     cy_stc_usb_dev_context_t *devContext);
 
-static cy_en_usb_dev_status_t GetDescriptorHidReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorHidReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                             cy_stc_usb_dev_hid_t const *hid);
 
-static cy_en_usb_dev_status_t GetDescriptorHidClassRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorHidClassRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                            cy_stc_usb_dev_hid_t const *hid);
 
-static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                cy_stc_usb_dev_hid_context_t const *context);
 
-static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                    cy_stc_usb_dev_hid_context_t *context);
 
-static cy_en_usb_dev_status_t GetIdleRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetIdleRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                              cy_stc_usb_dev_hid_t const *hid,
                                              cy_stc_usb_dev_hid_context_t *context);
 
-static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                cy_stc_usb_dev_hid_context_t const *context);
 
-static cy_en_usb_dev_status_t SetReportRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t SetReportRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer,
                                                        cy_stc_usb_dev_hid_context_t const *context);
 
-static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                  cy_stc_usb_dev_hid_context_t *context);
 
 static void UpdateIdleRateTimer(uint32_t idx, cy_stc_usb_dev_hid_context_t *context);
 
-static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                              cy_stc_usb_dev_hid_t const *hid,
                                              cy_stc_usb_dev_hid_context_t *context);
 
-static cy_stc_usb_dev_hid_t const * GetHidStruct(uint32_t intf, 
+static cy_stc_usb_dev_hid_t const * GetHidStruct(uint32_t intf,
                                                 cy_stc_usb_dev_context_t *devContext);
 
-static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx, 
+static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx,
                                                 cy_stc_usb_dev_hid_t const *hid,
                                                 cy_stc_usb_dev_hid_context_t const *context);
 
@@ -92,17 +93,17 @@ static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx
 * Function Name: Cy_USB_Dev_HID_Init
 ****************************************************************************//**
 *
-* Initializes the HID class. 
+* Initializes the HID class.
 * This function must be called to enable USB Device HID functionality.
 *
 * \param config
-* The pointer to the HID configuration 
+* The pointer to the HID configuration
 * structure \ref cy_stc_usb_dev_hid_config_t.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \param devContext
@@ -133,12 +134,12 @@ cy_en_usb_dev_status_t Cy_USB_Dev_HID_Init(cy_stc_usb_dev_hid_config_t const *co
 
     /* Store device context */
     context->devContext = devContext;
-    
+
     /* Register HID handlers */
     Cy_USB_Dev_RegisterClassBusResetCallback(&HandleBusReset, Cy_USB_Dev_HID_GetClass(context));
     Cy_USB_Dev_RegisterClassRequestRcvdCallback(&HandleRequest, Cy_USB_Dev_HID_GetClass(context));
     Cy_USB_Dev_RegisterClassRequestCmpltCallback(&HandleRequestComplete, Cy_USB_Dev_HID_GetClass(context));
-       
+
     return Cy_USB_Dev_RegisterClass(&context->classItem, &context->classObj, context, devContext);
 }
 
@@ -159,9 +160,9 @@ cy_en_usb_dev_status_t Cy_USB_Dev_HID_Init(cy_stc_usb_dev_hid_config_t const *co
 * Pass 0 if report ID is not used.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -173,12 +174,12 @@ cy_en_usb_dev_hid_timer_state_t Cy_USB_Dev_HID_UpdateTimer(uint32_t  interface,
                                         cy_stc_usb_dev_hid_context_t *context)
 {
     cy_en_usb_dev_hid_timer_state_t retState = CY_USB_DEV_HID_TIMER_INDEFINITE;
-    
+
     cy_stc_usb_dev_hid_t const *hidStruct = GetHidStruct(interface, context->devContext);
 
     /* Check that HID exists for given interface */
     CY_ASSERT_L1(NULL != hidStruct);
-       
+
     if (NULL != hidStruct)
     {
         uint32_t idx;
@@ -234,12 +235,12 @@ static void HandleBusReset(void *classContext, cy_stc_usb_dev_context_t *devCont
 {
     /* Suppress a compiler warning about unused variables */
     (void) devContext;
-    
+
     cy_stc_usb_dev_hid_context_t *context = (cy_stc_usb_dev_hid_context_t *) classContext;
 
     /* Set protocol to default */
     (void) memset((void *) context->protocol, (int32_t) CY_USB_DEV_HID_PROTOCOL_REPORT, (uint32_t) CY_USB_DEV_NUM_INTERFACES_MAX);
-    
+
     /* Set idle rate to default */
     (void) memset(context->idleRate,  (int32_t) HID_IDLE_RATE_INDEFINITE, (uint32_t) context->timersNum);
     (void) memset(context->idleTimer, (int32_t) HID_IDLE_RATE_INDEFINITE, (uint32_t) context->timersNum);
@@ -253,28 +254,28 @@ static void HandleBusReset(void *classContext, cy_stc_usb_dev_context_t *devCont
 * Handles HID class requests (SETUP packet received event).
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param classContext
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \param devContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the USB Device operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the USB Device operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
-                                     void *classContext, 
+static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *transfer,
+                                     void *classContext,
                                      cy_stc_usb_dev_context_t *devContext)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -297,7 +298,7 @@ static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *t
                 case CY_USB_DEV_HID_REPORT_DESCRIPTOR:
                     retStatus = GetDescriptorHidReportRequest(transfer, hidStruct);
                 break;
-                
+
                 case CY_USB_DEV_HID_DESCRIPTOR:
                     retStatus = GetDescriptorHidClassRequest(transfer, hidStruct);
                 break;
@@ -325,7 +326,7 @@ static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *t
                 case CY_USB_DEV_HID_RQST_GET_PROTOCOL:
                     retStatus = GetProtocolRequest(transfer, context);
                 break;
-                
+
                 case CY_USB_DEV_HID_RQST_GET_IDLE:
                     retStatus = GetIdleRequest(transfer, hidStruct, context);
                 break;
@@ -346,11 +347,11 @@ static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *t
                 case CY_USB_DEV_HID_RQST_SET_PROTOCOL:
                     retStatus = SetProtocolRequest(transfer, context);
                 break;
-                
+
                 case CY_USB_DEV_HID_RQST_SET_IDLE:
                     retStatus = SetIdleRequest(transfer, hidStruct, context);
                 break;
-                
+
                 default:
                     /* The request was not recognized */
                 break;
@@ -361,7 +362,7 @@ static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *t
     {
         /* The request was not recognized */
     }
-    
+
     return (retStatus);
 }
 
@@ -374,32 +375,32 @@ static cy_en_usb_dev_status_t HandleRequest(cy_stc_usb_dev_control_transfer_t *t
 * Involved when data from the host was received.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param classContext
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \param devContext
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the USB Device operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the USB Device operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer, 
-                                                    void *classContext, 
+static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer,
+                                                    void *classContext,
                                                     cy_stc_usb_dev_context_t *devContext)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-    
+
     /* Suppress a compiler warning about unused variables */
     (void) devContext;
 
@@ -407,7 +408,7 @@ static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_trans
     {
         retStatus = SetReportRequestComplete(transfer, (cy_stc_usb_dev_hid_context_t *) classContext);
     }
-    
+
     return retStatus;
 }
 
@@ -419,21 +420,21 @@ static cy_en_usb_dev_status_t HandleRequestComplete(cy_stc_usb_dev_control_trans
 * Handles GET_DESCRIPOR HID Report request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param hid
 * The pointer to the the structure that holds HID Class information.
 *
 * \return
-* Returns \ref CY_USB_DEV_SUCCESS. 
-* The \ref HandleRequest function checks that HID structure exist for the 
-* specified interface before calling \ref GetDescriptorHidReportRequest function. 
-* Therefore \ref GetDescriptorHidReportRequest successfully access to 
+* Returns \ref CY_USB_DEV_SUCCESS.
+* The HandleRequest function checks that HID structure exist for the
+* specified interface before calling GetDescriptorHidReportRequest function.
+* Therefore GetDescriptorHidReportRequest successfully access to
 * the HID structure.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetDescriptorHidReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorHidReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                             cy_stc_usb_dev_hid_t const *hid)
 {
     /* SETUP control transfer */
@@ -451,21 +452,21 @@ static cy_en_usb_dev_status_t GetDescriptorHidReportRequest(cy_stc_usb_dev_contr
 * Handles GET_DESCRIPOR HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param hid
 * The pointer to the the structure that holds HID Class information.
 *
 * \return
-* Returns \ref CY_USB_DEV_SUCCESS. 
-* The \ref HandleRequest function checks that HID structure exist for the 
-* specified interface before calling \ref GetDescriptorHidClassRequest function. 
-* Therefore \ref GetDescriptorHidClassRequest successfully access to 
+* Returns \ref CY_USB_DEV_SUCCESS.
+* The HandleRequest function checks that HID structure exist for the
+* specified interface before calling GetDescriptorHidClassRequest function.
+* Therefore GetDescriptorHidClassRequest successfully access to
 * the HID structure.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetDescriptorHidClassRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetDescriptorHidClassRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                            cy_stc_usb_dev_hid_t const *hid)
 {
     /* SETUP control transfer */
@@ -483,21 +484,21 @@ static cy_en_usb_dev_status_t GetDescriptorHidClassRequest(cy_stc_usb_dev_contro
 * Handles GET_REPORT HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                cy_stc_usb_dev_hid_context_t const *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -505,18 +506,18 @@ static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t
     if (NULL != context->handleGetReport)
     {
         uint32_t rptSize;
-        
+
         /* Get from the user report to send */
         retStatus = context->handleGetReport(
                                 (uint32_t) transfer->setup.wIndex,         /* Interface */
                                 (uint32_t) CY_HI8(transfer->setup.wValue), /* Report Type */
                                 (uint32_t) CY_LO8(transfer->setup.wValue), /* Report ID */
-                                &(transfer->ptr), 
+                                &(transfer->ptr),
                                 &rptSize);
-        
+
         transfer->remaining = (uint16_t) rptSize;
     }
-    
+
     return retStatus;
 }
 
@@ -528,21 +529,21 @@ static cy_en_usb_dev_status_t GetReportRequest(cy_stc_usb_dev_control_transfer_t
 * Handles GET_PROTOCOL HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
-*******************************************************************************/                                                              
-static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+*******************************************************************************/
+static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                  cy_stc_usb_dev_hid_context_t *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -554,12 +555,12 @@ static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer
         /* SETUP control transfer */
         transfer->ptr       = (uint8_t *) &context->protocol[interface];
         transfer->remaining = HID_PROTOCOL_LENGTH;
-        
+
         retStatus = CY_USB_DEV_SUCCESS;
     }
-    
+
     return retStatus;
-}  
+}
 
 
 /*******************************************************************************
@@ -569,32 +570,32 @@ static cy_en_usb_dev_status_t GetProtocolRequest(cy_stc_usb_dev_control_transfer
 * Handles GET_IDLE HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param hid
 * The pointer to the the structure that holds HID Class information.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
-*******************************************************************************/ 
-static cy_en_usb_dev_status_t GetIdleRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+*******************************************************************************/
+static cy_en_usb_dev_status_t GetIdleRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                              cy_stc_usb_dev_hid_t const        *hid,
                                              cy_stc_usb_dev_hid_context_t      *context)
 {
     cy_en_usb_dev_status_t retStatus;
     uint32_t idx;
-    
+
     retStatus = GetInputReportIdx((uint32_t) transfer->setup.wValue, &idx, hid, context);
-    
+
     if (CY_USB_DEV_SUCCESS == retStatus)
     {
         /* SETUP control transfer */
@@ -613,21 +614,21 @@ static cy_en_usb_dev_status_t GetIdleRequest(cy_stc_usb_dev_control_transfer_t *
 * Handles SET_REPORT HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t *transfer,
                                                cy_stc_usb_dev_hid_context_t const *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -637,10 +638,10 @@ static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t
         /* SETUP control transfer */
         transfer->remaining = transfer->setup.wLength;
         transfer->notify    = true;
-        
+
         retStatus = CY_USB_DEV_SUCCESS;
     }
-    
+
     return retStatus;
 }
 
@@ -652,62 +653,62 @@ static cy_en_usb_dev_status_t SetReportRequest(cy_stc_usb_dev_control_transfer_t
 * Completes handling SET_REPORT HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetReportRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer, 
+static cy_en_usb_dev_status_t SetReportRequestComplete(cy_stc_usb_dev_control_transfer_t *transfer,
                                                        cy_stc_usb_dev_hid_context_t const *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
 
     if (NULL != context->handleSetReport)
-    {                    
+    {
         /* Provide the user with report data */
         retStatus = context->handleSetReport(
                                 (uint32_t) transfer->setup.wIndex,         /* Interface */
                                 (uint32_t) CY_HI8(transfer->setup.wValue), /* Report Type */
                                 (uint32_t) CY_LO8(transfer->setup.wValue), /* Report ID */
-                                transfer->ptr, 
+                                transfer->ptr,
                                 (uint32_t) transfer->size);
     }
-    
+
     return retStatus;
-} 
+}
 
 
 /*******************************************************************************
 * Function Name: SetProtocolRequest
 ****************************************************************************//**
 *
-* Handles SET_PROTOCOL HID Class request. 
+* Handles SET_PROTOCOL HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                                  cy_stc_usb_dev_hid_context_t      *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
@@ -717,11 +718,11 @@ static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer
     if (interface < CY_USB_DEV_NUM_INTERFACES_MAX)
     {
         context->protocol[interface] = (uint8_t) (transfer->setup.wValue & HID_PROTOCOL_MASK);
-        
+
         /* SETUP control transfer, no data stage */
         retStatus = CY_USB_DEV_SUCCESS;
     }
-    
+
     return retStatus;
 }
 
@@ -736,12 +737,12 @@ static cy_en_usb_dev_status_t SetProtocolRequest(cy_stc_usb_dev_control_transfer
 * Idle Rate timer index.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
-*******************************************************************************/ 
+*******************************************************************************/
 static void UpdateIdleRateTimer(uint32_t idx, cy_stc_usb_dev_hid_context_t *context)
 {
     /* Reset timer if Idle rate indefinite */
@@ -769,16 +770,16 @@ static void UpdateIdleRateTimer(uint32_t idx, cy_stc_usb_dev_hid_context_t *cont
             }
             else
             {
-                /* A new request will be executed as if it were issued 
-                * immediately after the last report, if the new request 
-                * is received at least 4 milliseconds before the end of 
-                * the currently executing period. If the new request is 
-                * received within 4 milliseconds of the end of the 
-                * current period, then the new request will have no 
+                /* A new request will be executed as if it were issued
+                * immediately after the last report, if the new request
+                * is received at least 4 milliseconds before the end of
+                * the currently executing period. If the new request is
+                * received within 4 milliseconds of the end of the
+                * current period, then the new request will have no
                 * effect until after the report
                 */
 
-                /* Do nothing: let HID_UpdateTimer continue to counting 
+                /* Do nothing: let HID_UpdateTimer continue to counting
                 * and return TIMER_EXPIRED status.
                 */
             }
@@ -791,32 +792,32 @@ static void UpdateIdleRateTimer(uint32_t idx, cy_stc_usb_dev_hid_context_t *cont
 * Function Name: SetIdleRequest
 ****************************************************************************//**
 *
-* Handles SET_IDLE HID Class request. 
+* Handles SET_IDLE HID Class request.
 *
 * \param transfer
-* Pointer to structure that holds SETUP packet and information for 
+* Pointer to structure that holds SETUP packet and information for
 * request processing.
 *
 * \param hid
 * The pointer to the the structure that holds HID Class information.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Status of request processing: \ref CY_USB_DEV_SUCCESS or 
+* Status of request processing: \ref CY_USB_DEV_SUCCESS or
 * \ref CY_USB_DEV_REQUEST_NOT_HANDLED.
 *
-*******************************************************************************/ 
-static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t const *transfer, 
+*******************************************************************************/
+static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t const *transfer,
                                              cy_stc_usb_dev_hid_t const        *hid,
                                              cy_stc_usb_dev_hid_context_t      *context)
 {
     cy_en_usb_dev_status_t retStatus = CY_USB_DEV_REQUEST_NOT_HANDLED;
-    
+
     uint32_t reportId = CY_LO8(transfer->setup.wValue);
     uint32_t idx;
 
@@ -843,7 +844,7 @@ static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t c
             }
         }
     }
-    
+
     /* SETUP control transfer, no data stage */
 
     return retStatus;
@@ -854,7 +855,7 @@ static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t c
 * Function Name: GetHidStruct
 ****************************************************************************//**
 *
-* Returns the pointer to the structure that holds HID Class information 
+* Returns the pointer to the structure that holds HID Class information
 * for a certain interface.
 *
 * \param intf
@@ -865,25 +866,25 @@ static cy_en_usb_dev_status_t SetIdleRequest(cy_stc_usb_dev_control_transfer_t c
 * by the user.
 *
 * \return
-* The pointer to HID interface structure \ref cy_stc_usb_dev_hid_t. 
+* The pointer to HID interface structure \ref cy_stc_usb_dev_hid_t.
 * If interface protocol is not HID the NULL pointer is returned.
 *
 *******************************************************************************/
 static cy_stc_usb_dev_hid_t const * GetHidStruct(uint32_t intf, cy_stc_usb_dev_context_t *devContext)
 {
     uint32_t cfg = Cy_USB_Dev_GetConfigurationIdx(devContext);
-    
+
     cy_stc_usb_dev_hid_t const *hidStruct = NULL;
-    
+
     /* Check if interface is valid */
     if (intf < devContext->devDescriptors->configurations[cfg]->numInterfaces)
     {
         uint32_t alt = Cy_USB_Dev_GetAlternateSettings(intf, devContext);
-            
+
         /* Get report descriptor */
         hidStruct = devContext->devDescriptors->configurations[cfg]->interfaces[intf]->alternates[alt]->hid;
     }
-    
+
     return hidStruct;
 }
 
@@ -904,16 +905,16 @@ static cy_stc_usb_dev_hid_t const * GetHidStruct(uint32_t intf, cy_stc_usb_dev_c
 * The pointer to the the structure that holds HID Class information.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t 
-* allocated by the user. The structure is used during the HID Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_hid_context_t
+* allocated by the user. The structure is used during the HID Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx, 
+static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx,
                                                 cy_stc_usb_dev_hid_t const   *hid,
                                                 cy_stc_usb_dev_hid_context_t const *context)
 {
@@ -932,7 +933,7 @@ static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx
         {
             /* Get report ID index in timers array */
             uint32_t tmpIdx = (uint32_t) hid->inputReportIdx[reportId];
-            
+
             /* Check that index value is valid (0 is free location) */
             if ((tmpIdx > 0U) && (tmpIdx <= context->timersNum))
             {
@@ -946,7 +947,7 @@ static cy_en_usb_dev_status_t GetInputReportIdx(uint32_t reportId, uint32_t *idx
     return retStatus;
 }
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 
 /* [] END OF FILE */

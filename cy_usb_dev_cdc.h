@@ -1,12 +1,13 @@
 /***************************************************************************//**
 * \file cy_usb_dev_cdc.h
-* \version 2.0
+* \version 2.10
 *
 * Provides CDC class-specific API declarations.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -31,7 +32,7 @@
 
 #include "cy_usb_dev.h"
 
-#if defined(CY_IP_MXUSBFS)
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 #if defined(__cplusplus)
 extern "C" {
@@ -112,24 +113,24 @@ typedef enum
 /** CDC class configuration structure  */
 typedef struct
 {
-    /** The pointers to the buffers to store received data by COM port 0 and 1 
-    * appropriately. The buffer is mandatory to for \ref Cy_USB_Dev_CDC_GetData 
-    * and \ref Cy_USB_Dev_CDC_GetChar function operation. If these functions 
+    /** The pointers to the buffers to store received data by COM port 0 and 1
+    * appropriately. The buffer is mandatory to for \ref Cy_USB_Dev_CDC_GetData
+    * and \ref Cy_USB_Dev_CDC_GetChar function operation. If these functions
     * will not be used by the application pass NULL as a pointer. \n
-    * Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make 
+    * Allocate buffer using \ref CY_USB_DEV_ALLOC_ENDPOINT_BUFFER macro to make
     * it USBFS driver configuration independent (See \ref group_usb_dev_ep_buf_alloc
-    * for more information). 
+    * for more information).
     */
     uint8_t *buffer[CY_USB_DEV_CDC_COMPORT_NUMBER];
 
     /** Size of provided buffers to for the COM port 0 and 1 appropriately.
-    * The buffer size must be equal to the maximum packet size of CDC Data 
+    * The buffer size must be equal to the maximum packet size of CDC Data
     * interface IN endpoint that belongs to the COM port.
     * Pass zero size if the pointer to the buffer is NULL.
     */
     uint32_t bufferSize[CY_USB_DEV_CDC_COMPORT_NUMBER];
 
-    
+
 } cy_stc_usb_dev_cdc_config_t;
 
 /** \cond INTERNAL: CDC COM port properties structure */
@@ -153,81 +154,81 @@ typedef struct
     /** Contains the interface number used to define port number in requests. */
     volatile uint8_t interfaceNum;
 
-    /** 
-      * Contains the data IN endpoint size. It is initialized after a  
-      * SET_CONFIGURATION request based on a user descriptor. It is used 
-      * in CDC functions to send data to the Host. 
-      */ 
-    volatile uint16_t dataInEpSize; 
-    
-    /** 
-      * Contains the data OUT endpoint size. It is initialized after a 
-      * SET_CONFIGURATION request based on user descriptor. It is used in 
-      * CDC functions to receive data from the Host. 
-      */ 
-    volatile uint16_t dataOutEpSize; 
+    /**
+      * Contains the data IN endpoint size. It is initialized after a
+      * SET_CONFIGURATION request based on a user descriptor. It is used
+      * in CDC functions to send data to the Host.
+      */
+    volatile uint16_t dataInEpSize;
 
-    /** 
-      * Contains the IN interrupt endpoint size used for sending serial 
-      * state notification to the Host. It is initialized after a  
-      * SET_CONFIGURATION request based on a user descriptor. It is used 
-      * in the CDC function SendSerialState().  
-      */ 
-    volatile uint16_t commEpSize; 
+    /**
+      * Contains the data OUT endpoint size. It is initialized after a
+      * SET_CONFIGURATION request based on user descriptor. It is used in
+      * CDC functions to receive data from the Host.
+      */
+    volatile uint16_t dataOutEpSize;
 
-    /** 
-      * Contains the current line coding structure. The Host sets it using 
-      * a SET_LINE_CODING request and returns it to the user code using 
-      * the GetDTERate(), GetCharFormat(), GetParityType(), and 
-      * GetDataBits() functions.  
-      */ 
+    /**
+      * Contains the IN interrupt endpoint size used for sending serial
+      * state notification to the Host. It is initialized after a
+      * SET_CONFIGURATION request based on a user descriptor. It is used
+      * in the CDC function SendSerialState().
+      */
+    volatile uint16_t commEpSize;
+
+    /**
+      * Contains the current line coding structure. The Host sets it using
+      * a SET_LINE_CODING request and returns it to the user code using
+      * the GetDTERate(), GetCharFormat(), GetParityType(), and
+      * GetDataBits() functions.
+      */
     volatile uint8_t  linesCoding[CY_USB_DEV_CDC_LINE_CODING_SIZE];
-    /** 
+    /**
       * Used as a flag for the IsLineChanged() function, to inform it that
-      * the host has been sent a request to change line coding or control 
-      * bitmap.  
-      */ 
-    volatile uint8_t linesChanged; 
- 
-    /** 
-      * Contains the current control-signal bitmap. The Host sets it using 
-      * a SET_CONTROL_LINE request and returns it to the user code using 
-      * the GetLineControl() function.  
-      */ 
-    volatile uint8_t linesControlBitmap;
- 
-    /** 
-      * Contains the 16-bit serial state value that was sent using the  
-      * SendSerialState() function.  
-      */ 
-    volatile uint16_t serialStateBitmap; 
+      * the host has been sent a request to change line coding or control
+      * bitmap.
+      */
+    volatile uint8_t linesChanged;
 
-    /** 
-      * Contains the 16-bit serial state value that was sent using the  
-      * SendSerialState() function.  
-      */ 
+    /**
+      * Contains the current control-signal bitmap. The Host sets it using
+      * a SET_CONTROL_LINE request and returns it to the user code using
+      * the GetLineControl() function.
+      */
+    volatile uint8_t linesControlBitmap;
+
+    /**
+      * Contains the 16-bit serial state value that was sent using the
+      * SendSerialState() function.
+      */
+    volatile uint16_t serialStateBitmap;
+
+    /**
+      * Contains the 16-bit serial state value that was sent using the
+      * SendSerialState() function.
+      */
     volatile uint8_t serialStateNotification[CY_USB_DEV_CDC_SERIAL_STATE_SIZE];
 
-    /** 
-      * Contains the data IN endpoint number. It is initialized after a  
-      * SET_CONFIGURATION request based on a user descriptor. It is used 
-      * in CDC functions to send data to the host. 
-      */ 
-    volatile uint8_t dataInEp; 
+    /**
+      * Contains the data IN endpoint number. It is initialized after a
+      * SET_CONFIGURATION request based on a user descriptor. It is used
+      * in CDC functions to send data to the host.
+      */
+    volatile uint8_t dataInEp;
 
-    /** 
-      * Contains the data OUT endpoint number. It is initialized after a 
-      * SET_CONFIGURATION request based on user descriptor. It is used in 
-      * CDC functions to receive data from the Host. 
-      */ 
-    volatile uint8_t dataOutEp; 
+    /**
+      * Contains the data OUT endpoint number. It is initialized after a
+      * SET_CONFIGURATION request based on user descriptor. It is used in
+      * CDC functions to receive data from the Host.
+      */
+    volatile uint8_t dataOutEp;
 
-    /** 
-      * Contains the IN interrupt endpoint number used for sending serial 
-      * state notification to the host. It is initialized after a  
-      * SET_CONFIGURATION request based on a user descriptor. It is used 
-      * in the CDC function SendSerialState().  
-      */ 
+    /**
+      * Contains the IN interrupt endpoint number used for sending serial
+      * state notification to the host. It is initialized after a
+      * SET_CONFIGURATION request based on a user descriptor. It is used
+      * in the CDC function SendSerialState().
+      */
     volatile uint8_t commEp;
 
 } cy_stc_usb_dev_cdc_comport_t;
@@ -236,7 +237,7 @@ typedef struct
 /** CDC class context structure.
 * All fields for the CDC context structure are internal. Firmware never reads or
 * writes these values. Firmware allocates the structure and provides the
-* address of the structure to the middleware in CDC function calls. Firmware 
+* address of the structure to the middleware in CDC function calls. Firmware
 * must ensure that the defined instance of this structure remains in scope while
 * the middleware is in use.
 */
@@ -246,15 +247,15 @@ typedef struct
 
     /** COM port description array */
     cy_stc_usb_dev_cdc_comport_t port[CY_USB_DEV_CDC_COMPORT_NUMBER];
-    
+
     /** CDC class functions pointers */
     cy_stc_usb_dev_class_t classObj;
 
     /** CDC class linked list item */
     cy_stc_usb_dev_class_ll_item_t classItem;
- 
+
     /** Device context */
-    cy_stc_usb_dev_context_t *devContext; 
+    cy_stc_usb_dev_context_t *devContext;
 
     /**
     * Called after setupRequest was received (before internal processing).
@@ -268,7 +269,7 @@ typedef struct
     */
     cy_cb_usb_dev_request_cmplt_t requestCompleted;
 
-    /** \endcond */    
+    /** \endcond */
 
 } cy_stc_usb_dev_cdc_context_t;
 /** \} group_usb_dev_cdc_data_structures */
@@ -282,17 +283,17 @@ typedef struct
 * \addtogroup group_usb_dev_cdc_functions
 * \{
 */
-cy_en_usb_dev_status_t Cy_USB_Dev_CDC_Init(cy_stc_usb_dev_cdc_config_t  const *config, 
-                                           cy_stc_usb_dev_cdc_context_t       *context, 
+cy_en_usb_dev_status_t Cy_USB_Dev_CDC_Init(cy_stc_usb_dev_cdc_config_t  const *config,
+                                           cy_stc_usb_dev_cdc_context_t       *context,
                                            cy_stc_usb_dev_context_t           *devContext);
 
-cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutData(uint32_t port, uint8_t const *buffer, uint32_t size, 
+cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutData(uint32_t port, uint8_t const *buffer, uint32_t size,
                                               cy_stc_usb_dev_cdc_context_t *context);
 
 cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutString(uint32_t port, char_t const *string, int32_t timeout,
                                                 cy_stc_usb_dev_cdc_context_t  *context);
 
-__STATIC_INLINE cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutChar(uint32_t port, char_t ch, 
+__STATIC_INLINE cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutChar(uint32_t port, char_t ch,
                                                               cy_stc_usb_dev_cdc_context_t *context);
 
 uint32_t Cy_USB_Dev_CDC_GetCount(uint32_t port, cy_stc_usb_dev_cdc_context_t *context);
@@ -301,7 +302,7 @@ bool Cy_USB_Dev_CDC_IsDataReady(uint32_t port, cy_stc_usb_dev_cdc_context_t *con
 
 bool Cy_USB_Dev_CDC_IsReady(uint32_t port, cy_stc_usb_dev_cdc_context_t *context);
 
-uint32_t Cy_USB_Dev_CDC_GetData(uint32_t port, uint8_t *buffer, uint32_t  size, 
+uint32_t Cy_USB_Dev_CDC_GetData(uint32_t port, uint8_t *buffer, uint32_t  size,
                                 cy_stc_usb_dev_cdc_context_t  *context);
 
 uint32_t Cy_USB_Dev_CDC_GetAll(uint32_t port, uint8_t *buffer,  uint32_t maxSize,
@@ -315,20 +316,20 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetLineControl(uint32_t port, cy_stc_usb
 
 uint32_t Cy_USB_Dev_CDC_GetDTERate(uint32_t port, cy_stc_usb_dev_cdc_context_t *context);
 
-__STATIC_INLINE cy_en_usb_dev_cdc_stop_bit_t Cy_USB_Dev_CDC_GetCharFormat(uint32_t port, 
+__STATIC_INLINE cy_en_usb_dev_cdc_stop_bit_t Cy_USB_Dev_CDC_GetCharFormat(uint32_t port,
                                                                           cy_stc_usb_dev_cdc_context_t const *context);
 
 __STATIC_INLINE cy_en_usb_dev_cdc_parity_type_t Cy_USB_Dev_CDC_GetParity(uint32_t port, cy_stc_usb_dev_cdc_context_t const *context);
 
 __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetDataBits(uint32_t port, cy_stc_usb_dev_cdc_context_t const *context);
 
-cy_en_usb_dev_status_t Cy_USB_Dev_CDC_SendSerialState(uint32_t port, uint32_t serialState, 
+cy_en_usb_dev_status_t Cy_USB_Dev_CDC_SendSerialState(uint32_t port, uint32_t serialState,
                                                       cy_stc_usb_dev_cdc_context_t *context);
 
 bool Cy_USB_Dev_CDC_IsNotificationReady(uint32_t port, cy_stc_usb_dev_cdc_context_t *context);
 
-__STATIC_INLINE void Cy_USB_Dev_CDC_RegisterUserCallbacks(cy_cb_usb_dev_request_received_t requestReceivedHandle, 
-                                                          cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle, 
+__STATIC_INLINE void Cy_USB_Dev_CDC_RegisterUserCallbacks(cy_cb_usb_dev_request_received_t requestReceivedHandle,
+                                                          cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle,
                                                           cy_stc_usb_dev_cdc_context_t     *context);
 
 __STATIC_INLINE cy_stc_usb_dev_class_t * Cy_USB_Dev_CDC_GetClass(cy_stc_usb_dev_cdc_context_t *context);
@@ -347,13 +348,13 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetSerialState(uint32_t port, cy_stc_usb
 */
 
 /**
-* Indicates that a DTR signal is present. This signal corresponds to V.24 
+* Indicates that a DTR signal is present. This signal corresponds to V.24
 * signal 108/2 and RS232 signal DTR.
 */
 #define CY_USB_DEV_CDC_LINE_CONTROL_DTR       (0x1U)
 
 /**
-* Carrier control for half-duplex modems. This signal corresponds to V.24 
+* Carrier control for half-duplex modems. This signal corresponds to V.24
 * signal 105 and RS232 signal RTS.
 */
 #define CY_USB_DEV_CDC_LINE_CONTROL_RTS       (0x2U)
@@ -378,32 +379,32 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetSerialState(uint32_t port, cy_stc_usb
 * Function Name: Cy_USB_Dev_CDC_RegisterUserCallbacks
 ****************************************************************************//**
 *
-* Registering user callback to handle CDC class requests that are not supported 
+* Registering user callback to handle CDC class requests that are not supported
 * by provided CDC request handler.
 *
 * \param requestReceivedHandle
-* The pointer to a callback function. 
-* This function is called when setup packet was received from USB Host but was 
-* not recognized, therefore might require the user class processing. 
+* The pointer to a callback function.
+* This function is called when setup packet was received from USB Host but was
+* not recognized, therefore might require the user class processing.
 * To remove callback function pass NULL as function pointer.
 *
 * \param requestCompletedHandle
-* The pointer to a callback function. 
-* This function is called when USB Device received data from the USB Host 
-* as part of current request processing. The requestReceivedHandle function 
-* must enable notification to trigger this event. This makes sense only when CDC 
+* The pointer to a callback function.
+* This function is called when USB Device received data from the USB Host
+* as part of current request processing. The requestReceivedHandle function
+* must enable notification to trigger this event. This makes sense only when CDC
 * request processing requires a data stage.
 * To remove callback function pass NULL as function pointer.
 *
 * \param context
 * The pointer to the context structure \ref cy_stc_usb_dev_context_t allocated
-* by the user. The structure is used during the Audio Class operation for 
-* internal configuration and data retention. The user must not modify anything 
+* by the user. The structure is used during the Audio Class operation for
+* internal configuration and data retention. The user must not modify anything
 * in this structure.
 *
 *******************************************************************************/
-__STATIC_INLINE void Cy_USB_Dev_CDC_RegisterUserCallbacks(cy_cb_usb_dev_request_received_t requestReceivedHandle, 
-                                                          cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle, 
+__STATIC_INLINE void Cy_USB_Dev_CDC_RegisterUserCallbacks(cy_cb_usb_dev_request_received_t requestReceivedHandle,
+                                                          cy_cb_usb_dev_request_cmplt_t    requestCompletedHandle,
                                                           cy_stc_usb_dev_cdc_context_t     *context)
 {
     context->requestReceived  = requestReceivedHandle;
@@ -416,13 +417,13 @@ __STATIC_INLINE void Cy_USB_Dev_CDC_RegisterUserCallbacks(cy_cb_usb_dev_request_
 ****************************************************************************//**
 *
 * Returns pointer to the CDC class structure.
-* This function is useful to override class event handlers using 
+* This function is useful to override class event handlers using
 * \ref group_usb_dev_functions_class_support.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -445,9 +446,9 @@ __STATIC_INLINE cy_stc_usb_dev_class_t * Cy_USB_Dev_CDC_GetClass(cy_stc_usb_dev_
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -460,7 +461,7 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetSerialState(uint32_t port, cy_stc_usb
 {
     CY_ASSERT_L1(CY_USB_DEV_CDC_IS_COM_VALID(port));
 
-    uint32_t retState = (context->port[port].valid) ? 
+    uint32_t retState = (context->port[port].valid) ?
                          context->port[port].serialStateBitmap : 0U;
     return retState;
 }
@@ -470,28 +471,28 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetSerialState(uint32_t port, cy_stc_usb
 * Function Name: Cy_USB_Dev_CDC_IsLineChanged
 ****************************************************************************//**
 *
-* Returns the clear-on-read status of the COM port. 
+* Returns the clear-on-read status of the COM port.
 *
 * \param port
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* * \ref CY_USB_DEV_CDC_LINE_CODING_CHANGED when SET_LINE_CODING request is 
-*    received. 
-* * \ref CY_USB_DEV_CDC_LINE_CONTROL_CHANGED when CDC_SET_CONTROL_LINE_STATE 
-*    request is received. 
-* * \ref CY_USB_DEV_CDC_LINE_NOT_CHANGED when there were no request since last 
+* * \ref CY_USB_DEV_CDC_LINE_CODING_CHANGED when SET_LINE_CODING request is
+*    received.
+* * \ref CY_USB_DEV_CDC_LINE_CONTROL_CHANGED when CDC_SET_CONTROL_LINE_STATE
+*    request is received.
+* * \ref CY_USB_DEV_CDC_LINE_NOT_CHANGED when there were no request since last
 *    call.
-* 
+*
 * \note
-* This function is not interrupt-protected and to prevent a race condition, 
-* it should be protected from the USBFS interruption in the place where it 
+* This function is not interrupt-protected and to prevent a race condition,
+* it should be protected from the USBFS interruption in the place where it
 * is called.
 *
 *******************************************************************************/
@@ -516,9 +517,9 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_IsLineChanged(uint32_t port, cy_stc_usb_
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -538,8 +539,8 @@ __STATIC_INLINE cy_en_usb_dev_cdc_stop_bit_t Cy_USB_Dev_CDC_GetCharFormat(uint32
 ****************************************************************************//**
 *
 * Sends a single character to the USB Host.
-* Call \ref Cy_USB_Dev_CDC_IsReady function to ensure that the COM port 
-* (CDC Data interface) is ready for sending data to the USB Host before calling 
+* Call \ref Cy_USB_Dev_CDC_IsReady function to ensure that the COM port
+* (CDC Data interface) is ready for sending data to the USB Host before calling
 * this function.
 *
 * \param port
@@ -549,16 +550,16 @@ __STATIC_INLINE cy_en_usb_dev_cdc_stop_bit_t Cy_USB_Dev_CDC_GetCharFormat(uint32
 * Character to be sent.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
 * Status code of the function execution \ref cy_en_usb_dev_status_t.
 *
 *******************************************************************************/
-__STATIC_INLINE cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutChar(uint32_t port, char_t ch, 
+__STATIC_INLINE cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutChar(uint32_t port, char_t ch,
                                               cy_stc_usb_dev_cdc_context_t *context)
 {
     /* Put data into the aligned buffer to work with 8-bit and 16-bit access type */
@@ -572,15 +573,15 @@ __STATIC_INLINE cy_en_usb_dev_status_t Cy_USB_Dev_CDC_PutChar(uint32_t port, cha
 * Function Name: Cy_USB_Dev_CDC_GetParity
 ****************************************************************************//**
 *
-* Returns the parity type for the COM port. 
+* Returns the parity type for the COM port.
 *
 * \param port
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -605,9 +606,9 @@ __STATIC_INLINE cy_en_usb_dev_cdc_parity_type_t Cy_USB_Dev_CDC_GetParity(uint32_
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data keeping. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data keeping. The user must not modify
 * anything in this structure.
 *
 * \return
@@ -632,19 +633,19 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetDataBits(uint32_t port, cy_stc_usb_de
 * COM port number. Valid ports are 0 and 1.
 *
 * \param context
-* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t 
-* allocated by the user. The structure is used during the CDC Class operation  
-* for internal configuration and data retention. The user must not modify 
+* The pointer to the context structure \ref cy_stc_usb_dev_cdc_context_t
+* allocated by the user. The structure is used during the CDC Class operation
+* for internal configuration and data retention. The user must not modify
 * anything in this structure.
 *
 * \return
-* Line control bitmap \ref CY_USB_DEV_CDC_LINE_CONTROL_DTR and 
+* Line control bitmap \ref CY_USB_DEV_CDC_LINE_CONTROL_DTR and
 * \ref CY_USB_DEV_CDC_LINE_CONTROL_RTS.
 *
 *******************************************************************************/
 __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetLineControl(uint32_t port, cy_stc_usb_dev_cdc_context_t const *context)
 {
-    CY_ASSERT_L1(CY_USB_DEV_CDC_IS_COM_VALID(port));   
+    CY_ASSERT_L1(CY_USB_DEV_CDC_IS_COM_VALID(port));
 
     return (uint32_t) context->port[port].linesControlBitmap;
 }
@@ -655,7 +656,7 @@ __STATIC_INLINE uint32_t Cy_USB_Dev_CDC_GetLineControl(uint32_t port, cy_stc_usb
 }
 #endif
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 #endif /* (CY_USB_DEV_CDC_H) */
 

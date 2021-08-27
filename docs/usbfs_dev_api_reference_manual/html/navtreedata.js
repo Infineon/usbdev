@@ -1,6 +1,6 @@
 var NAVTREE =
 [
-  [ "Cypress USB Device Middleware Library 2.0", "index.html", [
+  [ "USB Device Middleware Library 2.10", "index.html", [
     [ "General Description", "index.html#section_usb_dev_general", null ],
     [ "Quick Start Guide", "index.html#section_usb_dev_quick_start", [
       [ "STEP 1: Enable the USB Device middleware.", "index.html#subsection_qsg_step1", null ],
@@ -30,11 +30,11 @@ var NAVTREE =
       [ "Driver Features", "index.html#group_usb_dev_drv_features", null ]
     ] ],
     [ "Supported Software and Tools", "index.html#section_usb_dev_toolchain", null ],
-    [ "MISRA-C Compliance", "index.html#group_usb_dev_MISRA", null ],
     [ "Errata", "index.html#section_usb_dev_errata", null ],
     [ "Changelog", "index.html#group_usb_dev_changelog", null ],
     [ "More Information", "index.html#group_usb_dev_more_information", null ],
-    [ "API Reference", "modules.html", "modules" ]
+    [ "API Reference", "modules.html", "modules" ],
+    [ "MISRA-C:2012 Compliance", "group_usb_dev__m_i_s_r_a.html", null ]
   ] ]
 ];
 

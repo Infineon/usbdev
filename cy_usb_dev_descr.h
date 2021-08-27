@@ -1,13 +1,14 @@
 /***************************************************************************//**
 * \file cy_usb_dev_descr.h
-* \version 2.0
+* \version 2.10
 *
-* Provides device definition structures and descriptors structures. 
+* Provides device definition structures and descriptors structures.
 * The descriptor structures can be used to access particular descriptors.
 *
 ********************************************************************************
 * \copyright
-* Copyright 2018-2019, Cypress Semiconductor Corporation.  All rights reserved.
+* (c) 2018-2021, Cypress Semiconductor Corporation (an Infineon company) or
+* an affiliate of Cypress Semiconductor Corporation. All rights reserved.
 * You may use this file only in accordance with the license, terms, conditions,
 * disclaimers, and limitations in the end user license agreement accompanying
 * the software package with which this file was provided.
@@ -25,7 +26,7 @@
 #include "cy_usb_dev_cdc_descr.h"
 #include "cy_usb_dev_hid_descr.h"
 
-#if defined(CY_IP_MXUSBFS)
+#if (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS))
 
 #if defined(__cplusplus)
 extern "C" {
@@ -46,7 +47,7 @@ typedef struct
 {
     /** Pointer to the endpointDescriptor Descriptor in the Configuration Descriptor */
     const uint8_t *endpointDescriptor;
-    
+
 } cy_stc_usb_dev_endpoint_t;
 
 
@@ -70,7 +71,7 @@ typedef struct
 
     /** Array of indexes for input report IDs */
     const uint8_t *inputReportIdx;
-    
+
     /** Number of elements in the array of indexes */
     uint8_t inputReportIdxSize;
 
@@ -102,7 +103,7 @@ typedef struct
 
     /** Pointer to array of pointers to structure that stores Interface Alternates information */
     const cy_stc_usb_dev_alternate_t **alternates;
-    
+
     /** Mask that represents endpoints that belong to Interface Alternates */
     uint16_t endpointsMask;
 } cy_stc_usb_dev_interface_t;
@@ -116,7 +117,7 @@ typedef struct
 
     /** Pointer to uint8_t array that stores Configuration Descriptor */
     const uint8_t  *configDescriptor;
-    
+
     /** Pointer to array of pointers to structure that store Interface information */
     const cy_stc_usb_dev_interface_t **interfaces;
 } cy_stc_usb_dev_configuration_t;
@@ -126,7 +127,7 @@ typedef struct
 {
     /** Pointer to MS OS String descriptor */
     const uint8_t  *msOsDescriptor;
-    
+
     /** Vendor code to get Extended Compat ID and Properties OS Descriptors */
     uint8_t msVendorCode;
 
@@ -158,7 +159,7 @@ typedef struct
 typedef struct
 {
     /** Pointer to uint8_t array that stores Device Descriptor */
-    const uint8_t *deviceDescriptor;        
+    const uint8_t *deviceDescriptor;
 
     /** Pointer to uint8_t array that stores BOS Descriptor */
     const uint8_t *bosDescriptor;
@@ -324,7 +325,7 @@ typedef struct
 }
 #endif
 
-#endif /* CY_IP_MXUSBFS) */
+#endif /* (defined(CY_IP_MXUSBFS) || defined(CY_IP_M0S8USBDSS)) */
 
 #endif /* (CY_USB_DEV_DESCR_H) */
 

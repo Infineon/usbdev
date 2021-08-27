@@ -6,7 +6,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=9"/>
 <meta name="generator" content="Doxygen 1.8.13"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>Cypress USB Device Middleware Library 2.0: Cypress USB Device Middleware Library 2.0</title>
+<title>USB Device Middleware Library 2.10: USB Device Middleware Library 2.10</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -28,9 +28,9 @@
 <table cellspacing="0" cellpadding="0">
  <tbody>
  <tr style="height: 56px;">
-  <td id="projectlogo"><a href="http://www.cypress.com/"><img alt="Logo" src="cypress_logo.png"/></a></td>
+  <td id="projectlogo"><a href="http://www.cypress.com/"><img alt="Logo" src="logo.png"/></a></td>
   <td id="projectalign" style="padding-left: 0.5em;">
-   <div id="projectname">Cypress USB Device Middleware Library 2.0</div>
+   <div id="projectname">USB Device Middleware Library 2.10</div>
   </td>
  </tr>
  </tbody>
@@ -81,7 +81,7 @@ $(document).ready(function(){initNavTree('index.html','');});
 
 <div class="header">
   <div class="headertitle">
-<div class="title">Cypress USB Device Middleware Library 2.0 </div>  </div>
+<div class="title">USB Device Middleware Library 2.10 </div>  </div>
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>The USB Device middleware provides a full-speed USB 2.0 Chapter 9 specification -compliant device framework. It uses the USBFS driver from PDL to interface with the hardware. The middleware provides support for Audio, CDC, and HID classes. Also, it allows implementing other class support. The USB Configurator tool makes it easy to construct the USB Device descriptor.</p>
@@ -106,7 +106,7 @@ General Description</h1>
 <h1><a class="anchor" id="section_usb_dev_quick_start"></a>
 Quick Start Guide</h1>
 <p>Cypress USB Device middleware can be used in various software environments. Refer to the <a class="el" href="index.html#section_usb_dev_toolchain">Supported Software and Tools</a>. The quickest way to get started is using the Code Examples. Cypress Semiconductor continuously extends its portfolio of code examples at <a href="http://www.cypress.com"><b>Cypress Semiconductor website</b></a> and at <a href="https://github.com/cypresssemiconductorco"><b>Cypress Semiconductor GitHub</b></a>.</p>
-<p>This quick start guide is for an environment configured to use for development PSoC 6 Peripheral Driver Library(psoc6pdl) included in the project.</p>
+<p>This quick start guide is for an environment configured to use for development MTB CAT1A Peripheral Driver Library (PSoC6) or MTB CAT2 Peripheral Driver Library (PSoC4 &amp; PMG1) included in the project.</p>
 <p>To easily run a USB, use the ModusToolbox USBCommDevice or USBM project. The steps below show how to set up a USB Device based on a basic ModusToolbox project (like Hello_World).</p>
 <p>The following steps set up a USB device recognized as an standard HID device - USB mouse and moves it from right to the left, and vice-versa. </p><dl class="section note"><dt>Note</dt><dd>Some steps contain a corresponding to the figure below number in brackets.</dd></dl>
 <h2><a class="anchor" id="subsection_qsg_step1"></a>
@@ -117,7 +117,7 @@ STEP 2: Generate initialization code.</h2>
 <ol type="1">
 <li>Launch the ModusToolbox Device Configurator Tool and switch to the Peripherals tab (#1.1).</li>
 <li>Enable the USB personality under Communication and enter Alias (#1.2). We use USBHID in <a class="el" href="index.html#section_usb_dev_quick_start">Quick Start Guide</a></li>
-<li>Go to the Parameters pane and configure the USB personality: assign the peripheral clock divider (#1.3) for Clock (Bus Reset). Any available free divider can be used.</li>
+<li>Go to the Parameters pane and configure the USB personality: assign the peripheral clock divider (#1.3) for Clock (Bus Reset). Any available free divider can be used. This is not required to be done for the PMG1 family of devices.</li>
 <li>Set Endpoint Mask to 1 to enable data endpoint 1 (#1.4) Enabled data endpoints must match the descriptor tree in the USB Configurator. <div class="image">
 <img src="usb_dev_device_cfg.png" alt="usb_dev_device_cfg.png"/>
 </div>
@@ -125,8 +125,9 @@ STEP 2: Generate initialization code.</h2>
 <li>Switch to the System tab (#2.1).</li>
 <li>Check the IMO clock is enabled (#2.2). Select Trim with USB (#2.3)</li>
 <li>Select one of the PLLs, if your device supports more than one. Enable the PLL and set a frequency of 48 MHz (#2.4).</li>
-<li>Select the CLK_HF3 USB clock (#2.5). Assign the source clock to the CLK_PATH connected to the configured previously PLL (#2.6).</li>
-<li>Check the FLL clock is enabled (#2.7).</li>
+<li>Select the CLK_HF3 USB clock (#2.5). Assign the source clock to the CLK_PATH connected to the configured previously PLL.<br />
+ (Not required for PMG1 devices) (#2.6).</li>
+<li>Check the FLL clock is enabled (Not required for PMG1 devices) (#2.7).</li>
 <li>Select File-&gt;Save to generate initialization code. <div class="image">
 <img src="usb_dev_system_cfg.png" alt="usb_dev_system_cfg.png"/>
 </div>
@@ -158,7 +159,7 @@ STEP 4: Update main.c</h2>
 </ol>
 <h2><a class="anchor" id="subsection_qsg_step5"></a>
 STEP 5: Build and program the device.</h2>
-<p>Connect the device to the Host PC. On the PC, verify a new USB device was enumerated as a mouse device. The mouse’s cursor shall move left to right and vice-versa.</p>
+<p>Connect the device to the Host PC. On the PC, verify a new USB device was enumerated as a mouse device. The mouse's cursor shall move left to right and vice-versa.</p>
 <h1><a class="anchor" id="group_usb_dev_configuration"></a>
 Configuration Considerations</h1>
 <p>This section explains how to configure the USB Device for operation.</p>
@@ -331,45 +332,7 @@ Driver Features</h2>
 <p>Find more information in the appropriate section of the USBFS driver documentation provided in the PDL API Reference Manual.</p>
 <h1><a class="anchor" id="section_usb_dev_toolchain"></a>
 Supported Software and Tools</h1>
-<p>This version of the USB Device Middleware was validated for the compatibility with the following Software and Tools:</p>
-<table class="doxtable">
-<tr>
-<th>Software and Tools </th><th>Version  </th></tr>
-<tr>
-<td>ModusToolbox Software Environment </td><td>2.0  </td></tr>
-<tr>
-<td>- ModusToolbox Device Configurator </td><td>2.0  </td></tr>
-<tr>
-<td>- ModusToolbox USB Device Personality in Device Configurator </td><td>1.1  </td></tr>
-<tr>
-<td>- ModusToolbox USB Device Configurator </td><td>2.0  </td></tr>
-<tr>
-<td>PSoC6 Peripheral Driver Library (PDL) </td><td>1.3.0  </td></tr>
-<tr>
-<td>GCC Compiler </td><td>7.2.1  </td></tr>
-<tr>
-<td>IAR Compiler </td><td>8.32  </td></tr>
-<tr>
-<td>ARM Compiler 6 </td><td>6.11  </td></tr>
-</table>
-<h1><a class="anchor" id="group_usb_dev_MISRA"></a>
-MISRA-C Compliance</h1>
-<p>The MISRA-C Compliant verification is not performed for Beta release. </p><table class="doxtable">
-<tr>
-<th>MISRA Rule </th><th>Rule Class (Required/Advisory) </th><th>Rule Description </th><th>Description of Deviation(s)  </th></tr>
-<tr>
-<td>11.4 </td><td>A </td><td>A cast should not be performed between a pointer to object type and a different pointer to object type. </td><td>A cast involving pointers is conducted with caution that the pointers are correctly aligned for the type of object being pointed to.   </td></tr>
-<tr>
-<td>11.5 </td><td>R </td><td>A cast shall not be performed that removes any const or volatile qualification from the type addressed by a pointer.  </td><td><ol type="1">
-<li>All device descriptors are stored in flash. On the USB Host get descriptor request, the pointer to descriptor is assigned to a pointer that manages data transfer losing const qualification. Despite the qualification being lost, the middleware does not perform any write access using this pointer.</li>
-<li>Some device characteristics are stored in volatile variables. On the USB Host request, the pointer to a characteristic variable is assigned to a pointer that manages data transfer losing volatile qualification. Despite the qualification being lost, this does not cause any negative impact because the data transfer is managed by the interrupt handler. The same happens when these variables are passed as parameters to memcpy or memset function.   </li>
-</ol>
-</td></tr>
-<tr>
-<td>14.7 </td><td>R </td><td>A function shall have a single point of exit at the end of the function. </td><td>The functions can return from several points. This is typically done to improve code clarity when returning error status code if input parameters validation fails.  </td></tr>
-<tr>
-<td>16.7 </td><td>A </td><td>A pointer parameter in a function prototype should be declared as a pointer to const if the pointer is not used to modify the addressed object. </td><td>The usbfs driver and middleware defines general function prototypes and pointers to functions types but the function's implementation depends on configuration. Therefore, some functions' implementation require parameters to be pointers to const. This is not met because of the generalized implementation approach.  </td></tr>
-</table>
+<p>For supported software and tools, refer to the Supported Software and Tools section in in the <a href="https://github.com/Infineon/usbdev/blob/master/RELEASE.md#supported-software-and-tools">RELEASE.md</a></p>
 <h1><a class="anchor" id="section_usb_dev_errata"></a>
 Errata</h1>
 <p>This section lists the known problems with the USB Device middleware.</p>
@@ -387,6 +350,14 @@ Changelog</h1>
 <tr>
 <th>Version</th><th>Changes</th><th>Reason for Change </th></tr>
 <tr>
+<td rowspan="4">2.10 </td><td>Updated Documentation </td><td>PMG1 Integration  </td></tr>
+<tr>
+<td>Fixed vendor request handling </td><td>Defect Fixes  </td></tr>
+<tr>
+<td>Added support for configurations without any data endpoints </td><td>Defect Fixes   </td></tr>
+<tr>
+<td>Minor enhancements in several functions. </td><td>Enabled compliance with MISRA-C:2012 standard.   </td></tr>
+<tr>
 <td rowspan="5">2.0 </td><td>Updated the internal processing to support USBFS driver updates. </td><td>The USBFS driver is updated to v2.0.  </td></tr>
 <tr>
 <td>Moved the timeout from <a class="el" href="group__group__usb__dev__functions__data__transfer.html#gafe804a021cfbea888a966b8cf1b4172e" title="Aborts pending read or write endpoint operation. ">Cy_USB_Dev_AbortEpTransfer()</a> to the driver layer. The maximum function's wait time is significantly reduced. </td><td>Align with the changes of the USBFS driver.  </td></tr>
@@ -401,28 +372,15 @@ Changelog</h1>
 </table>
 <h1><a class="anchor" id="group_usb_dev_more_information"></a>
 More Information</h1>
-<p>For more detail, refer to the following documents:</p>
-<ul>
-<li><a href="https://cypresssemiconductorco.github.io/psoc6pdl/pdl_api_reference_manual/html/index.html"><b>PSoC 6 Peripheral Driver Library API Reference</b></a></li>
-<li><a href="https://www.cypress.com/products/modustoolbox-software-environment"><b>ModusToolbox Software Environment, Quick Start Guide, Documentation, and Videos</b></a></li>
-<li><a href="https://github.com/cypresssemiconductorco/Code-Examples-for-the-ModusToolbox-PSoC-6-SDK"><b>PSoC 6 SDK Examples</b></a></li>
-<li><a href="https://www.cypress.com/ModusToolboxUSBConfig"><b>ModusToolbox USB Configurator Tool Guide</b></a></li>
-<li><a href="https://www.cypress.com/ModusToolboxDeviceConfig"><b>ModusToolbox Device Configurator Tool Guide</b></a></li>
-<li><a href="http://www.cypress.com/cy8ckit-062-wifi-bt"><b>PSoC 6 WiFi-BT Pioneer Kit</b></a></li>
-<li><a href="http://www.cypress.com/cy8cproto-062-4343w"><b>PSoC 6 Wi-Fi BT Prototyping Kit</b></a></li>
-<li><a href="http://www.cypress.com/psoc6ds"><b>PSoC 6 MCU Datasheets</b></a></li>
-<li><a href="http://www.cypress.com/psoc6an"><b>PSoC 6 MCU Application Notes</b></a></li>
-<li><a href="http://www.cypress.com/psoc6trm"><b>PSoC 6 MCU Technical Reference Manuals</b></a></li>
-<li><a href="http://www.cypress.com"><b>Cypress Semiconductor</b></a></li>
-</ul>
-<dl class="section note"><dt>Note</dt><dd>The links to the other software component’s documentation (middleware and PDL) point to GitHub to the software latest available version. To get documentation of the specified version, download from GitHub and unzip the component archive. The documentation is available in the <em>docs</em> folder. </dd></dl>
+<p>For more information, refer to the links in the <a href="https://github.com/Infineon/usbdev/blob/master/README.md#more-information">README.md</a></p>
+<dl class="section note"><dt>Note</dt><dd>The links to the other software component's documentation (middleware and PDL) point to GitHub to the software latest available version. To get documentation of the specified version, download from GitHub and unzip the component archive. The documentation is available in the <em>docs</em> folder. </dd></dl>
 </div></div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part
 <div id="nav-path" class="navpath">
     <ul>
         <li class="footer">
-            Generated for <b>Cypress USB Device Middleware Library 2.0</b> by <b>Cypress Semiconductor Corporation</b>.
+            Generated for <b>USB Device Middleware Library 2.10</b> by <b>Cypress Semiconductor Corporation</b>.
             All rights reserved.
         </li>
     </ul>
